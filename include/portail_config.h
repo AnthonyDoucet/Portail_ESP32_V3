@@ -8,23 +8,36 @@
 #define PIN_Bouton4 35
 #define PIN_vBat 32
 #define PIN_PresenceSecteur 33
-
 #define PIN_Cycle  25
+
 #define PIN_Force 26
 #define PIN_Ouvre 27
-#define PIN_BUILDIN_LED 5
+#define PIN_LED_BUILDIN 5
 #define PIN_DEBUG 16
 
 //######## LCD ########
-#define LCD_ADDR 0x27               //Adresse I2C du LCD
-#define LCD_WIDTH 16                //Taille ecran LCD
-#define LCD_HEIGHT 2                //Taille ecran LCD
+#define LCD_ENABLED true
+#define LCD_ADDR 0x27               //Adresse I2C #SDA pin 21  #SCL pin 22
+#define LCD_WIDTH 16                //Nombre de pixels en largeur
+#define LCD_HEIGHT 2                //Nombre de pixels en hauteur
 #define LCD_REFRESH_RATE 500        //Delais entre chaque mise a jour de l'ecran
 #define LCD_BACKLIGHT_TIMEOUT 60    //Delais de mise en veille de l'ecran LCD (en secondes) si aucune interaction
-#define LCD_MENU_TAILLE 8           //Nombre de Menu LCD
+#define LCD_MENU_TAILLE 8           //Nombre de Menu
 #define LCD_START_DELAY 3000        //Temps d'affichage des infos sur LCD au demarage (en ms)
 
 //######## NETWORK ########
+#define ETH_SPI_HOST HSPI_HOST
+#define SPI_CLOCK_MHZ 12
+
+#define SPI_MISO_GPIO 19
+#define SPI_MOSI_GPIO 23
+#define SPI_SCLK_GPIO 18
+#define SPI_CS0_GPIO 5
+
+#define SPI_INT0_GPIO 4
+#define SPI_PHY_RST0_GPIO -1
+#define SPI_PHY_ADDR0 1
+
 #define MAC_ADDRESS { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }  //Adresse MAC ETHERNET
 #define HTTP_PORT 80                //Port HTTP
 

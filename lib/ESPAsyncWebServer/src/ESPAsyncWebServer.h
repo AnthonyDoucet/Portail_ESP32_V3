@@ -29,7 +29,7 @@
 #include "StringArray.h"
 
 #ifdef ESP32
-#include <ETH_WS5500.h>
+#include <esp32_w5500.h>
 #include <AsyncTCP.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>

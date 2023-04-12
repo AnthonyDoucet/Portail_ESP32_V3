@@ -4,23 +4,36 @@
 //######## SETUP ########
 void setup(){
     Serial.begin(UART_BAUDRATE);
-    DEBUGLN();DEBUGLN("---------- SETUP ----------");DEBUGLN();
-
+    DEBUGLN();DEBUGLN(F("---------- SETUP ----------"));DEBUGLN();
     initIO();
-
-    byte blink_delay = 100;
-    digitalWrite(PIN_BUILDIN_LED, LOW);
-    digitalWrite(PIN_BUILDIN_LED, HIGH);
-    delay(blink_delay);
-    digitalWrite(PIN_BUILDIN_LED, LOW);
-
+    blink(PIN_LED_BUILDIN, 100);
+    readInputs();
+    #if LCD_ENABLED
+      initLCD();
+      lcdClear(2);
+      lcdPrint(0,3,F("PORTAIL V3"));
+      lcdPrint(1,0,F(" initialisation "));
+    #endif
+    //initEEPROM(); //todo
+    //readEEPROM(); //todo
+    //initRTC();    //todo
     initServer();
-
-    DEBUGLN();DEBUGLN("---------- SETUP END "+ String(millis() - blink_delay) +"ms ----------");DEBUGLN();
+    //lcdPrint(1,0,F("Attente d'une IP"));
+    DEBUGLN();DEBUGLN("---------- SETUP END "+ String(millis()) +"ms ----------");DEBUGLN();
+    delay(100); //for DHCP
 }
 
 //######## LOOP ########
+unsigned previousMillis[10] = {0};
 void loop(){
   debug_loop();
-  delay(1);
+
+  if(millis() >= previousMillis[0] + 1000){
+    previousMillis[0] = millis();
+    bool eth_link = ETH.linkUp();
+    lcdPrint(0,0,String(ulong(millis()/1000)));
+  }
+
+  writeOutputs();
+  readInputs();
 }
