@@ -243,7 +243,7 @@ IPAddress ESP32_W5500::localIP()
     return IPAddress();
   }
 
-  log_d("localIP = %s", IPAddress(ip.ip.addr).toString());
+  //log_d("localIP = %s", IPAddress(ip.ip.addr).toString());
 
   return IPAddress(ip.ip.addr);
 }

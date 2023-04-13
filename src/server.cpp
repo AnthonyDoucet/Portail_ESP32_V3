@@ -14,14 +14,6 @@ void initServer(){
       request->send(200, "text/plain", "Projet Portail v3");
     });
 
-    server.on("/millis", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", "Millis since start: "+String(millis()/1000));
-    });
-
-    server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", "ESP FreeHeap: "+String(ESP.getFreeHeap()));
-    });
-
     server.on("/force", HTTP_GET, [](AsyncWebServerRequest *request){
       state_pin_force = !state_pin_force;
       request->send(200, "text/plain", "force: " + String(state_pin_force));
@@ -32,8 +24,9 @@ void initServer(){
       request->send(200, "text/plain", "ouvre: " + String(state_pin_ouvre));
     });
 
-    server.on("/io", HTTP_GET, [](AsyncWebServerRequest *request){
-      String str = "-- INPUT --\n";
+    server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *request){
+      String str = "";
+      str += "-- INPUT --\n";
       str += "nBat:" + String(nBat) + "\n";
       str += "vBat:" + String(vBat) + "\n";
       str += "state_pin_btn1:" + String(state_pin_btn1) + "\n";
@@ -45,8 +38,14 @@ void initServer(){
 
       str += "-- OUTPUT --\n";
       str += "state_pin_force:" + String(state_pin_force) + "\n";
-      str += "state_pin_ouvre:" + String(state_pin_ouvre) + "\n";
+      str += "state_pin_ouvre:" + String(state_pin_ouvre) + "\n\n";
 
+      str += "-- DEBUG --\n";
+      str += "RTC Time:" + getRTCTimeStr() + "\n";
+      str += "Uptime:" + String(millis()/1000) + "s\n";
+      str += "Saved uptime:" + String(saved_uptime) + "s\n";
+      str += "ESP FreeHeap:" + String(ESP.getFreeHeap()) + "\n";
+      str += "ESP Sketch Size:" + String(ESP.getSketchSize()) + "\n";
 
       request->send(200, "text/plain", str);
     });
@@ -59,10 +58,6 @@ void initServer(){
 
     DEBUGLN("starting AsyncWebServer");
     server.begin();
-}
-
-void initNTP(){
-    //todo
 }
 
 void WiFiEvent(WiFiEvent_t event){  //handle Ethernet connection event

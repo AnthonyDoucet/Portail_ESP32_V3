@@ -9,14 +9,13 @@ void setup(){
     blink(PIN_LED_BUILDIN, 100);
     readInputs();
     #if LCD_ENABLED
-      initLCD();
-      lcdClear(2);
-      lcdPrint(0,3,F("PORTAIL V3"));
-      lcdPrint(1,0,F(" initialisation "));
+    initLCD();
+    lcdClear(2);
+    lcdPrint(0,3,F("PORTAIL V3"));
+    lcdPrint(1,0,F(" initialisation "));
     #endif
-    //initEEPROM(); //todo
-    //readEEPROM(); //todo
-    //initRTC();    //todo
+    readEEPROM();
+    initRTC();
     initServer();
     //lcdPrint(1,0,F("Attente d'une IP"));
     DEBUGLN();DEBUGLN("---------- SETUP END "+ String(millis()) +"ms ----------");DEBUGLN();
@@ -24,16 +23,32 @@ void setup(){
 }
 
 //######## LOOP ########
-unsigned previousMillis[10] = {0};
 void loop(){
-  debug_loop();
-
-  if(millis() >= previousMillis[0] + 1000){
-    previousMillis[0] = millis();
-    bool eth_link = ETH.linkUp();
-    lcdPrint(0,0,String(ulong(millis()/1000)));
-  }
-
+  delayed_task();
+  portail_process();
   writeOutputs();
   readInputs();
+  debug_loop();
+}
+
+//######## TASK ########
+unsigned previousMillis[10] = {0};
+void delayed_task(){
+
+  if(millis() >= previousMillis[0] + 1000){     //1 sec
+    previousMillis[0] = millis();
+    lcdPrint(0,0,String(millis()/1000));
+    lcdMenu();
+    rtc_now = DS1307_RTC.now();
+  }
+
+  if(millis() >= previousMillis[1] + 60000){   //1min
+    previousMillis[1] = millis();
+    //printLocalTime();
+  }
+
+  if(millis() >= previousMillis[2] + 3600000){   //1h
+    previousMillis[2] = millis();
+    writeEEPROM();
+  }
 }
