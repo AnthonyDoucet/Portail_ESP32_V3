@@ -14,9 +14,9 @@ void setup(){
     lcdPrint(0,3,F("PORTAIL V3"));
     lcdPrint(1,0,F(" initialisation "));
     #endif
-    readEEPROM();
+    initEEPROM();
     initRTC();
-    initServer();
+    initConnection();
     //lcdPrint(1,0,F("Attente d'une IP"));
     DEBUGLN();DEBUGLN("---------- SETUP END "+ String(millis()) +"ms ----------");DEBUGLN();
     delay(100); //for DHCP
@@ -29,6 +29,9 @@ void loop(){
   writeOutputs();
   readInputs();
   debug_loop();
+
+  if(shouldReboot)
+    ESP.restart();
 }
 
 //######## TASK ########

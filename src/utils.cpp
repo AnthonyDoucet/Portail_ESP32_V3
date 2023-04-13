@@ -146,11 +146,25 @@ void initRTC(){
   PRINTLN("RTC Started");
 }
 
+String getRTCDateStr(){
+  if(!DS1307_RTC.isrunning()){
+    return "RTC Not running";
+  }
+  return String(rtc_now.year()) + "/" + to2digit(rtc_now.month()) + "/" + to2digit(rtc_now.day());
+}
+
 String getRTCTimeStr(){
   if(!DS1307_RTC.isrunning()){
     return "RTC Not running";
   }
-  return String(rtc_now.year()) + "/" + String(rtc_now.month()) + "/" + String(rtc_now.day()) + " " + String(rtc_now.hour()) + ":" + String(rtc_now.minute()) + ":" + String(rtc_now.second());
+  return to2digit(rtc_now.hour()) + ":" + to2digit(rtc_now.minute()) + ":" + to2digit(rtc_now.second());
+}
+
+String to2digit(uint8_t nombre){
+  String resultat;
+  if(nombre < 10)
+    resultat = "0";
+  return resultat += String(nombre,DEC);  
 }
 
 //######## EEPROM ########
@@ -186,6 +200,15 @@ void initEEPROM(){
 
   // Restart ESP
   //ESP.restart();
+
+  PRINTLN("Init read EEPROM");
+  eeprom.begin("data", false); //Read/Write
+  reboot_counter = eeprom.getUShort("reboot", 0);
+  reboot_counter++;
+  eeprom.putUShort("reboot", reboot_counter);
+  eeprom.end();
+
+  readEEPROM();
 }
 
 void readEEPROM(){

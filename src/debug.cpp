@@ -12,6 +12,6 @@ void debug_loop(){
     DEBUGLN("Ethernet: " + ETH.localIP().toString());
     DEBUGLN("WIFI: "     + WiFi.localIP().toString());
     DEBUGLN("HEAP: "     + String(ESP.getFreeHeap()));
-    DEBUGLN("RTC: "      + getRTCTimeStr());
+    DEBUGLN("RTC: "      + getRTCDateStr() + " " + getRTCTimeStr());
   }
 }

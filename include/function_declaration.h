@@ -12,9 +12,11 @@ void cycle_process();
 void debug_loop();
 
 //######## server.cpp ########
+void initConnection();
 void initServer();
-void WiFiEvent(WiFiEvent_t event);
+void networkEvent(WiFiEvent_t event);
 void WebSocketEvent();
+String processor(const String &var);
 
 //######## utils.cpp ########
 //IO
@@ -34,7 +36,9 @@ void lcdMenu();
 
 //RTC
 void initRTC();
+String getRTCDateStr();
 String getRTCTimeStr();
+String to2digit(uint8_t nombre);
 
 //EEPROM
 void initEEPROM();

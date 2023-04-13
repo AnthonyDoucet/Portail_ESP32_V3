@@ -6,6 +6,8 @@
 #include <macro.h>
 #include <Preferences.h>
 #include <ESPAsyncWebServer.h>
+#include <Update.h>
+#include <ESPmDNS.h>
 #if LCD_ENABLED
     #include <LiquidCrystal_I2C.h>
 #endif
@@ -30,7 +32,10 @@ GLOBAL RTC_DS1307 DS1307_RTC;
 GLOBAL DateTime rtc_now;
 
 //###### variables ######
+GLOBAL bool shouldReboot _INIT(0);
+GLOBAL bool serverStarted _INIT(0);
 GLOBAL uint32_t saved_uptime _INIT(0);
+GLOBAL uint16_t reboot_counter _INIT(0);
 GLOBAL uint16_t nBat _INIT(0);
 GLOBAL uint16_t vBat _INIT(0);
 GLOBAL bool state_pin_btn1 _INIT(0);
