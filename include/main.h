@@ -58,14 +58,14 @@ GLOBAL uint32_t last_time_btn_pressed _INIT(0);
 
 /*---------------------------------------------------------------*/
 //Infos
-//GLOBAL bool cycleEnCours _INIT(0);
+GLOBAL bool cycle_en_cours _INIT(0);
 //GLOBAL bool secteur _INIT(0);
+GLOBAL String date_cycle[20] _INIT({"Aucun"});
 GLOBAL String date_derniere_coupure[10] _INIT({"Aucune"});
 GLOBAL String date_derniere_presence[10] _INIT({"Aucune"});
 GLOBAL String date_dernier_cycle_jour _INIT("Aucun");
 GLOBAL String date_dernier_cycle_nuit _INIT("Aucun");
 
-//GLOBAL String dateCycle[10] _INIT({"Aucun"});
 //GLOBAL uint16_t incrementForce _INIT(1);
 //GLOBAL uint16_t incrementDateCycle _INIT(1);
 //GLOBAL uint16_t incrementPresenceSecteur _INIT(1);
@@ -77,10 +77,10 @@ GLOBAL bool heure_hiver _INIT(0);
 //GLOBAL bool ouvre_normal _INIT(0);
 
 //PLAGE HORAIRE JOUR
-//GLOBAL uint8_t horaireMatin[2]  _INIT({HEURE_JOUR_DEBUT,0});
-//GLOBAL uint8_t horaireMatin_Previous[2] _INIT({0});
-//GLOBAL uint8_t horaireNuit[2] _INIT({HEURE_JOUR_FIN,0});
-//GLOBAL uint8_t horaireNuit_Previous[2] _INIT({0});
+GLOBAL uint8_t horaireMatin_h  _INIT({HEURE_JOUR_DEBUT});
+GLOBAL uint8_t horaireMatin_m  _INIT({HEURE_JOUR_DEBUT});
+GLOBAL uint8_t horaireNuit_h _INIT({HEURE_JOUR_FIN});
+GLOBAL uint8_t horaireNuit_m _INIT({HEURE_JOUR_FIN});
 
 //COMPTEUR AVANT FORCE
 GLOBAL String date_dernier_force[10] _INIT({"Aucune"});

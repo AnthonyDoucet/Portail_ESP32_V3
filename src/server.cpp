@@ -21,8 +21,10 @@ void initServer(){
 
     DEBUGLN("init AsyncWebServer");
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_USERNAME,WEB_PASSWORD))
         return request->requestAuthentication();
+      #endif
       decodeParameters(request);
       AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, processor);
       response->addHeader("Server","ESP Async Web Server");
@@ -30,11 +32,19 @@ void initServer(){
     });
 
     server.on("/historique", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_USERNAME,WEB_PASSWORD))
         return request->requestAuthentication();
+      #endif
       String str = "";
       int i;
 
+      str += "-- date_ouvertures --:\n";
+      for(i=0 ; i < 20 ; i++){
+        str += "["+String(i)+"] " +  date_cycle[i] + "\n";
+      }
+      str += "\n\n";
+      
       str += "-- date_derniere_coupure --:\n";
       for(i=0 ; i < 10 ; i++){
         str += "["+String(i)+"] " +  date_derniere_coupure[i] + "\n";
@@ -57,8 +67,10 @@ void initServer(){
     });
 
     server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
         return request->requestAuthentication();
+      #endif
 
       String str = "";
       str += "-- URL --:\n";
@@ -102,8 +114,10 @@ void initServer(){
     });
 
     server.on("/reset_reboot_counter", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
         return request->requestAuthentication();
+      #endif
       uint16_t saved_reboot_counter = reboot_counter;
       eeprom.begin("data", false); //Read/Write
       eeprom.putUShort("reboot", 0);
@@ -113,16 +127,20 @@ void initServer(){
     });
 
     server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
         return request->requestAuthentication();
+      #endif
       request->send(200, "text/plain", "ESP rebooting...");
       shouldReboot = true;
     });
 
     // Simple Firmware Update Form
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
       if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
         return request->requestAuthentication();
+      #endif
       request->send(200, "text/html", "<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>");
     });
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -254,13 +272,15 @@ void decodeParameters(AsyncWebServerRequest *request){
 
     // Plage Horaire
     if (request->hasParam("horaireMatin")) {
-      String str = request->getParam("horaireMatin")->value();
-      DEBUGLN("horaireMatin: " + str);
+      horaireMatin_h = request->getParam("h")->value().toInt();
+      horaireMatin_m = request->getParam("m")->value().toInt();
+      DEBUGLN("horaireMatin: ");
     }
 
     if (request->hasParam("horaireNuit")) {
-      String str = request->getParam("horaireNuit")->value();
-      DEBUGLN("horaireNuit: " + str);
+      horaireNuit_h = request->getParam("h")->value().toInt();
+      horaireNuit_m = request->getParam("m")->value().toInt();
+      DEBUGLN("horaireNuit: ");
     }
 
     // Ouverture forcée
@@ -307,10 +327,12 @@ String processor(const String &var){
       return getRTCTimeStr();
     }
     else if(var == "CYCLE"){
-      return (state_pin_cycle) ? "cVert" : "cRouge";
+      return (state_pin_cycle) ? "cVert" : "cGris";
     }
     else if(var == "FORCE"){
-      return (state_pin_force) ? "cVert" : "cRouge";
+      if(state_pin_cycle)
+        return "cBleu";
+      return (state_pin_force) ? "cVert" : "cGris";
     }
     else if(var == "PRESENCE_SECTEUR"){
       return (state_pin_secteur) ? "Oui" : "Non";
@@ -335,7 +357,14 @@ String processor(const String &var){
     else if(var == "HEURE_HIVER"){
       return (heure_hiver) ? "checked" : " "; 
     }
+
     //PLAGE HORAIRE
+    else if(var == "PLAGE_MATIN"){
+      return to2digit(horaireMatin_h) + ":" + to2digit(horaireMatin_m); 
+    }
+    else if(var == "PLAGE_NUIT"){
+      return to2digit(horaireNuit_h) + ":" + to2digit(horaireNuit_m); 
+    }
 
     //OUVERTURE FORCEE
     else if(var == "DATE_FORCE"){

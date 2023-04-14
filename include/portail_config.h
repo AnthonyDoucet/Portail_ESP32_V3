@@ -41,10 +41,7 @@
 #define MAC_ADDRESS { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }  //Adresse MAC ETHERNET
 #define HTTP_PORT 80                //Port HTTP
 
-#define WEBSOCKET_PORT 81           //Port WebSocket
-#define MAX_WEBSOCKET_CLIENTS 5     //Nombre de clients WebSocket simultanés
-#define WS_REFRESH_RATE 500         //Delais entre chaque envoie de données
-
+#define WEB_ENABLE_LOGIN false
 #define WEB_USERNAME "user"         //Nom d'utilisateur SITE
 #define WEB_PASSWORD "1234"         //Mot de passe SITE
 #define WEB_ADMIN_USERNAME "admin"  //Nom d'utilisateur ADMINISTRATEUR SITE

@@ -7,7 +7,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="5">
+    <meta http-equiv="refresh" content="15">
     <title>Portail</title>
     <style>
         body {
@@ -28,6 +28,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
         h2{ margin: 0px; }
         h3{ margin: 0; }
+        .cGris{ background-color: rgb(221, 219, 219); }
         .cRouge{ background-color: crimson; }
         .cVert{ background-color: green; }
         .cBleu{ background-color: darkblue; }
@@ -103,9 +104,9 @@ const char index_html[] PROGMEM = R"rawliteral(
         <h2>Plage Horaire Jour</h2>
             <form>
                 <label>Debut: </label>
-                <input id="horaireMatin" type="time" oninput='sendGetRequest("horaireMatin")'>
+                <input id="horaireMatin" type="time" value="%PLAGE_MATIN%" onChange='sendGetRequest("horaireMatin")'>
                 <label>Fin: </label>
-                <input id="horaireNuit" type="time" oninput='sendGetRequest("horaireNuit")'><br>
+                <input id="horaireNuit" type="time" value="%PLAGE_NUIT%" onChange='sendGetRequest("horaireNuit")'><br>
             </form>
         <h2>Ouverture forcée</h2>
         <table>
@@ -185,9 +186,20 @@ const char index_html[] PROGMEM = R"rawliteral(
             case "heure_hiver":
                 currentUrl += "?heure_hiver=" + document.getElementById(name).checked;
                 break;
-                
+
             case "sync_rtc":
                 currentUrl += "?sync_rtc=" + Math.floor(Date.now() / 1000);
+                break;
+
+            //Plage horaire
+            case "horaireMatin":
+                var val = document.getElementById(name).value;
+                currentUrl += "?horaireMatin&h="+ (val[0]+val[1]) +"&m=" + (val[3]+val[4]);
+                break;
+           
+            case "horaireNuit":
+                var val = document.getElementById(name).value;
+                currentUrl += "?horaireNuit&h="+ (val[0]+val[1]) +"&m=" + (val[3]+val[4]);
                 break;
 
             // Ouverture forcée
