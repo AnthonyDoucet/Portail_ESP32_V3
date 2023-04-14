@@ -13,12 +13,13 @@ const char index_html[] PROGMEM = R"rawliteral(
         body {
             background-color: whitesmoke;
             width: fit-content;
+            padding: 15px;
             margin: auto;
             font-family: Arial, Helvetica, sans-serif;
         }
         div {
             border-style: solid;
-            padding: 3px;
+            padding: 10px;
         }
         .btn {
             margin: 2px;
@@ -27,15 +28,17 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
         h2{ margin: 0px; }
         h3{ margin: 0; }
-        .couleurImportant{ color: crimson; }
-        .couleurInfo{ color: darkblue; }
-        .debug{padding: 2px;}
+        .cRouge{ background-color: crimson; }
+        .cVert{ background-color: green; }
+        .cBleu{ background-color: darkblue; }
+        .miniBox{ padding: 1px 20px; }
     </style>
 </head>
 <body>
     <div>
         <a href="/debug">Debug</a>
         <a href="/update">Update</a>
+        <a href="/historique">Historique</a>
         <table>
             <tbody>
                 <tr>
@@ -50,12 +53,12 @@ const char index_html[] PROGMEM = R"rawliteral(
                     <td>%HEURE%</td>
                 </tr>
                 <tr>
-                    <td class="couleurImportant"><b>Cycle en cours:</b></td>
-                    <td class="couleurImportant"><b>%CYCLE%</b></td>
+                    <td><b>Cycle en cours:</b></td>
+                    <td><a class="miniBox %CYCLE%"></a></td>
                 </tr>
                 <tr>
-                    <td class="couleurImportant"><b>Ouverture Forcee:</b></td>
-                    <td class="couleurImportant"><b>%FORCE%</b></td>
+                    <td><b>Ouverture Forcée:</b></td>
+                    <td><a class="miniBox %FORCE%"></a></td>
                 </tr>
                 <tr>
                     <td>Presence du secteur:</td>
@@ -87,42 +90,37 @@ const char index_html[] PROGMEM = R"rawliteral(
     <br>
     <div>
         <h2>Controles</h2>
-        <form name="publish">
-            <label>Heure d'hiver: </label>
-            <input class="btn" id="heureHiver" type="checkbox" onclick="sendJson(1)"><br>
-
-            <label>Synchroniser l'heure interne avec internet: </label>
-            <input class="btn" id="syncBtn" type="button" value="Sync" onclick="sendJson(2)"><br>
-
-            <label class="couleurInfo"><b>Ouverture forcée :</b></label>
-            <input class="btn" type="button" value="On/Off" onclick="sendJson(3)"><br>
-
-            <label class="couleurInfo"><b>Ouverture normale: </b></label>
-            <input class="btn" type="button" value="Valider" onclick="sendJson(4)"><br>
-        </form>
-
+            <form>
+                <label>Heure d'hiver: </label>
+                <input class="btn" id="heure_hiver" type="checkbox" onChange='sendGetRequest("heure_hiver")' %HEURE_HIVER%><br>
+                <label>Synchroniser l'heure interne avec internet: </label>
+                <input class="btn" type="button" value="Sync" onclick='sendGetRequest("sync_rtc")'><br>
+                <label class="cInfo"><b>Ouverture forcée :</b></label>
+                <input class="btn" type="button" value="On/Off" onclick='sendGetRequest("force")'><br>
+                <label class="cInfo"><b>Ouverture normale: </b></label>
+                <input class="btn" type="button" value="Valider" onclick='sendGetRequest("ouvre")'><br>
+            </form>
         <h2>Plage Horaire Jour</h2>
-        <form name="horaire">
-            <label>Debut: </label>
-            <input id="horaireMatin" type="time" oninput="sendJson(5)">
-            <label>Fin: </label>
-            <input id="horaireNuit" type="time" oninput="sendJson(6)"><br>
-        </form>
-
+            <form>
+                <label>Debut: </label>
+                <input id="horaireMatin" type="time" oninput='sendGetRequest("horaireMatin")'>
+                <label>Fin: </label>
+                <input id="horaireNuit" type="time" oninput='sendGetRequest("horaireNuit")'><br>
+            </form>
         <h2>Ouverture forcée</h2>
         <table>
             <tbody>
                 <tr>
-                    <td>Derniere ouverture forcée: <span id="dateForce"></span></td>
+                    <td>Derniere ouverture forcée: <span>%DATE_FORCE%</span></td>
                 </tr>
                 <tr>
-                    <td>Compteur avant ouverture forcée: <span id="cmpAvantForce"></span>/<span id="seuilAvantForce"></span></td>
+                    <td>Compteur avant ouverture forcée: <span>%CMP_AVANT_FORCE%</span>/<span>%SEUIL_AVANT_FORCE%</span></td>
                 </tr>
                 <tr>
                     <td>
-                        <input class="btn" type="button" value="Reset Compteur" onclick="sendJson(9)">
-                        <input class="btn" type="button" value="Seuil -1" onclick="sendJson(7)">
-                        <input class="btn" type="button" value="Seuil +1" onclick="sendJson(8)">
+                        <input class="btn" type="button" value="Reset Compteur" onclick='sendGetRequest("avantForce_rst")'>
+                        <input class="btn" type="button" value="Seuil -1" onclick='sendGetRequest("avantForce_moin")'>
+                        <input class="btn" type="button" value="Seuil +1" onclick='sendGetRequest("avantForce_plus")'>
                     </td>
                 </tr>
             </tbody>
@@ -136,49 +134,94 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <tr>
                     <td><h3>Journalier: </h3></td>
                     <td>Jour:</td>
-                    <td id="cmpJournalierJour"></td>
+                    <td>%CMP_JOURNALIER_JOUR%</td>
                     <td><pre>    </pre></td>
                     <td>Nuit:</td>
-                    <td id="cmpJournalierNuit"></td>
+                    <td>%CMP_JOURNALIER_NUIT%</td>
                 </tr>
 
                 <tr>
                     <td><h3>Principal: </h3></td>
                     <td>Jour:</td>
-                    <td id="cmpOuverturesJour"></td>
+                    <td>%CMP_OUVERTURES_JOUR%</td>
                     <td></td>
                     <td>Nuit:</td>
-                    <td id="cmpOuverturesNuit"></td>
+                    <td>%CMP_OUVERTURES_NUIT%</td>
                     <td><pre>    </pre></td>
-                    <td><input class="btn" type="button" value="Reset" onclick="sendJson(11)"></td>
+                    <td><input class="btn" type="button" value="Reset" onclick='sendGetRequest("cmp_principal_rst")'></td>
                 </tr>
 
                 <tr>
                     <td><h3>Auxiliaire: </h3></td>
                     <td>Jour:</td>
-                    <td id="cmpAuxOuverturesJour"></td>
+                    <td>%CMP_AUX_JOUR%</td>
                     <td></td>
                     <td>Nuit:</td>
-                    <td id="cmpAuxOuverturesNuit"></td>
+                    <td>%CMP_AUX_NUIT%</td>
                     <td></td>
-                    <td><input class="btn" type="button" value="Reset" onclick="sendJson(12)"></td>
+                    <td><input class="btn" type="button" value="Reset" onclick='sendGetRequest("cmp_aux_rst")'></td>
                 </tr>
 
                 <tr>
                     <td><h3>Coupures secteur:</h3></td>
-                    <td><span id="cmpCoupures"></span></td>
+                    <td><span>%CMP_COUPURES%</span></td>
                     <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td><input class="btn" type="button" value="Reset" onclick="sendJson(13)"></td>
+                    <td><input class="btn" type="button" value="Reset" onclick='sendGetRequest("cmp_coupures_rst")'></td>
                 </tr>
             </tbody>
         </table>
     </div>
 </body>
 <br>
+<script>
+    function sendGetRequest(name) {
+        var currentUrl = window.location.href;
+        switch(name){
+            // Controle
+            case "heure_hiver":
+                currentUrl += "?heure_hiver=" + document.getElementById(name).checked;
+                break;
+                
+            case "sync_rtc":
+                currentUrl += "?sync_rtc=" + Math.floor(Date.now() / 1000);
+                break;
+
+            // Ouverture forcée
+            case "avantForce_rst":
+                currentUrl += "?avantForce_rst=0";
+                break;
+
+            // Compteurs
+            case "cmp_principal_rst":
+                currentUrl += "?cmp_principal_rst&jour=0&nuit=0";
+                break;
+
+            case "cmp_aux_rst":
+                currentUrl += "?cmp_aux_rst&jour=0&nuit=0";
+                break;
+
+            case "cmp_coupures_rst":
+                currentUrl += "?cmp_coupures_rst=0";
+                break;
+
+            default:
+                currentUrl += "?" + name;
+                break;
+        }
+        console.log(currentUrl);
+        fetch(currentUrl)
+        .then(response => {
+            location.reload()
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    }
+</script>
 </html>
 )rawliteral";
 

@@ -21,38 +21,60 @@ void initServer(){
 
     DEBUGLN("init AsyncWebServer");
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_USERNAME,WEB_PASSWORD))
+        return request->requestAuthentication();
+      decodeParameters(request);
       AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, processor);
       response->addHeader("Server","ESP Async Web Server");
       request->send(response);
     });
 
-    server.on("/force", HTTP_GET, [](AsyncWebServerRequest *request){
-      state_pin_force = !state_pin_force;
-      request->send(200, "text/plain", "force: " + String(state_pin_force));
-    });
+    server.on("/historique", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_USERNAME,WEB_PASSWORD))
+        return request->requestAuthentication();
+      String str = "";
+      int i;
 
-    server.on("/ouvre", HTTP_GET, [](AsyncWebServerRequest *request){
-      state_pin_ouvre = !state_pin_ouvre;
-      request->send(200, "text/plain", "ouvre: " + String(state_pin_ouvre));
-    });
+      str += "-- date_derniere_coupure --:\n";
+      for(i=0 ; i < 10 ; i++){
+        str += "["+String(i)+"] " +  date_derniere_coupure[i] + "\n";
+      }
+      str += "\n\n";
 
-    server.on("/reset_reboot_counter", HTTP_GET, [](AsyncWebServerRequest *request){
-      uint16_t saved_reboot_counter = reboot_counter;
-      eeprom.begin("data", false); //Read/Write
-      eeprom.putUShort("reboot", 0);
-      reboot_counter = 0;
-      eeprom.end();
-      request->send(200, "text/plain", "reboot_counter was " + String(saved_reboot_counter) + " , now set to ");
+      str += "-- date_derniere_presence --:\n";
+      for(i=0 ; i < 10 ; i++){
+        str += "["+String(i)+"] " +  date_derniere_presence[i] + "\n";
+      }
+      str += "\n\n";
+
+      str += "-- date_dernier_force --:\n";
+      for(i=0 ; i < 10 ; i++){
+        str += "["+String(i)+"] " +  date_dernier_force[i] + "\n";
+      }
+      str += "\n\n";
+
+      request->send(200, "text/plain", str);
     });
 
     server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
+
       String str = "";
       str += "-- URL --:\n";
-      str += "/force\n";
-      str += "/ouvre\n";
-      str += "/reset_reboot_counter\n";
-      str += "/debug\n";
-      str += "/reboot\n\n";
+      str += "portail.local/historique";
+      str += "portail.local/update\n";
+      str += "portail.local/reset_reboot_counter\n";
+      str += "portail.local/reboot\n\n";
+
+      str += "-- SET_VARIABLES --:\n";
+      str += "portail.local?heure_hiver=true\n";
+      str += "portail.local?sync_rtc=1681463715\n";
+      str += "portail.local?avantForce_rst=0\n";
+      str += "portail.local?cmp_principal_rst=0\n";
+      str += "portail.local?cmp_principal_rst&jour=0&nuit=0\n";
+      str += "portail.local?cmp_aux_rst&jour=0&nuit=0\n";
+      str += "portail.local?cmp_coupures_rst=0\n\n";
 
       str += "-- INPUT --\n";
       str += "nBat:" + String(nBat) + "\n";
@@ -79,13 +101,28 @@ void initServer(){
       request->send(200, "text/plain", str);
     });
 
+    server.on("/reset_reboot_counter", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
+      uint16_t saved_reboot_counter = reboot_counter;
+      eeprom.begin("data", false); //Read/Write
+      eeprom.putUShort("reboot", 0);
+      reboot_counter = 0;
+      eeprom.end();
+      request->send(200, "text/plain", "reboot_counter was " + String(saved_reboot_counter) + " , now set to " + String(reboot_counter) );
+    });
+
     server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
       request->send(200, "text/plain", "ESP rebooting...");
       shouldReboot = true;
     });
 
     // Simple Firmware Update Form
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
       request->send(200, "text/html", "<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>");
     });
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -142,16 +179,16 @@ void networkEvent(WiFiEvent_t event){  //handle Ethernet connection event
 
     case ARDUINO_EVENT_ETH_CONNECTED:
       DEBUGLN(F("ETH Connected"));
-      ethernet_status = "Link on";
+      ethernet_status = "Link on        ";
       break;
 
     case ARDUINO_EVENT_ETH_DISCONNECTED:
       DEBUGLN(F("ETH Disconnected"));
-      ethernet_status = "Link off";
+      ethernet_status = "Link off       ";
       break;
 
     case ARDUINO_EVENT_ETH_GOT_IP:
-      ethernet_status = "Ok";
+      ethernet_status = "Got IP, Ok     ";
 
       DEBUG(F("ETH MAC: "));
       DEBUG(ETH.macAddress());
@@ -182,42 +219,157 @@ void networkEvent(WiFiEvent_t event){  //handle Ethernet connection event
   }
 }
 
-void WebSocketEvent(){
-    //todo
+void decodeParameters(AsyncWebServerRequest *request){
+
+    // Controle
+    if (request->hasParam("heure_hiver")) {
+      String input = request->getParam("heure_hiver")->value();
+      if(heure_hiver == false && input == "true"){
+        setRTCunixtime(rtc_now.unixtime() - 3600);
+        heure_hiver = true;
+      }
+      else if(heure_hiver == true && input == "false"){
+        setRTCunixtime(rtc_now.unixtime() + 3600);
+        heure_hiver = false;
+      }
+    }
+
+    if (request->hasParam("sync_rtc")) {
+      double val = request->getParam("sync_rtc")->value().toDouble();
+      DEBUGLN("sync_rtc: " + String(val));
+      val += 3600; //GMT+1
+      if(!heure_hiver){
+          val += 3600;  //GMT+2
+      }
+      setRTCunixtime(val);
+    }
+
+    if (request->hasParam("force")) {
+      state_pin_force = !state_pin_force;
+    }
+
+    if (request->hasParam("ouvre")) {
+      state_pin_ouvre = !state_pin_ouvre;
+    }
+
+    // Plage Horaire
+    if (request->hasParam("horaireMatin")) {
+      String str = request->getParam("horaireMatin")->value();
+      DEBUGLN("horaireMatin: " + str);
+    }
+
+    if (request->hasParam("horaireNuit")) {
+      String str = request->getParam("horaireNuit")->value();
+      DEBUGLN("horaireNuit: " + str);
+    }
+
+    // Ouverture forcée
+    if (request->hasParam("avantForce_rst")) {
+      cmp_avant_force = request->getParam("avantForce_rst")->value().toInt();
+    }
+
+    if (request->hasParam("avantForce_moin")) {
+      if(seuil_avant_force > 2){
+        seuil_avant_force--;
+      }
+    }
+
+    if (request->hasParam("avantForce_plus")) {
+      if(seuil_avant_force < 20){
+        seuil_avant_force++;
+      }
+    }
+
+    // Compteurs
+    if (request->hasParam("cmp_principal_rst")) {
+      cmp_ouvertures_jour = request->getParam("jour")->value().toInt();
+      cmp_ouvertures_nuit = request->getParam("nuit")->value().toInt();
+    }
+
+    if (request->hasParam("cmp_aux_rst")) {
+      cmp_aux_ouvertures_jour = request->getParam("jour")->value().toInt();
+      cmp_aux_ouvertures_nuit = request->getParam("nuit")->value().toInt();
+    }
+
+    if (request->hasParam("cmp_coupures_rst")) {
+      cmp_coupures = request->getParam("cmp_coupures_rst")->value().toInt();
+    }
+
 }
 
 String processor(const String &var){
 
-  if(var == "DATE"){
-    return getRTCDateStr();
-  }
-  else if(var == "HEURE"){
-    return getRTCTimeStr();
-  }
-  else if(var == "CYCLE"){
-    return (state_pin_ouvre) ? "Oui" : "Non";
-  }
-  else if(var == "FORCE"){
-    return (state_pin_force) ? "Oui" : "Non";
-  }
-  else if(var == "PRESENCE_SECTEUR"){
-    return (state_pin_secteur) ? "Oui" : "Non";
-  }
-  else if(var == "VBAT"){
-    return String(nBat);
-  }
-  else if(var == "DATE_COUPURE"){
-    return String("Aucune");
-  }
-  else if(var == "DATE_PRESENCE"){
-    return String("Aucune");
-  }
-  else if(var == "DATE_CYCLE_JOUR"){
-    return String("Aucune");
-  }
-  else if(var == "DATE_CYCLE_NUIT"){
-    return String("Aucune");
-  }
+    //INFOS
+    if(var == "DATE"){
+      return getRTCDateStr();
+    }
+    else if(var == "HEURE"){
+      return getRTCTimeStr();
+    }
+    else if(var == "CYCLE"){
+      return (state_pin_cycle) ? "cVert" : "cRouge";
+    }
+    else if(var == "FORCE"){
+      return (state_pin_force) ? "cVert" : "cRouge";
+    }
+    else if(var == "PRESENCE_SECTEUR"){
+      return (state_pin_secteur) ? "Oui" : "Non";
+    }
+    else if(var == "VBAT"){
+      return String(nBat) + "n  " + String(vBat) + "v";
+    }
+    else if(var == "DATE_COUPURE"){
+      return date_derniere_coupure[0];
+    }
+    else if(var == "DATE_PRESENCE"){
+      return date_derniere_presence[0];
+    }
+    else if(var == "DATE_CYCLE_JOUR"){
+      return date_dernier_cycle_jour;
+    }
+    else if(var == "DATE_CYCLE_NUIT"){
+      return date_dernier_cycle_nuit;
+    }
+
+    //CONTROLES
+    else if(var == "HEURE_HIVER"){
+      return (heure_hiver) ? "checked" : " "; 
+    }
+    //PLAGE HORAIRE
+
+    //OUVERTURE FORCEE
+    else if(var == "DATE_FORCE"){
+      return date_dernier_force[0];
+    }
+    else if(var == "CMP_AVANT_FORCE"){
+      return String(cmp_avant_force);
+    }
+    else if(var == "SEUIL_AVANT_FORCE"){
+      return String(seuil_avant_force);
+    }
+
+    //COMPTEURS
+    else if(var == "CMP_JOURNALIER_JOUR"){
+      return String(cmp_journalier_jour);
+    }
+    else if(var == "CMP_JOURNALIER_NUIT"){
+      return String(cmp_journalier_nuit);
+    }
+    else if(var == "CMP_OUVERTURES_JOUR"){
+      return String(cmp_ouvertures_jour);
+    }
+    else if(var == "CMP_OUVERTURES_NUIT"){
+      return String(cmp_ouvertures_nuit);
+    }
+    else if(var == "CMP_AUX_JOUR"){
+      return String(cmp_aux_ouvertures_jour);
+    }
+    else if(var == "CMP_AUX_NUIT"){
+      return String(cmp_aux_ouvertures_nuit);
+    }
+    else if(var == "CMP_COUPURES"){
+      return String(cmp_coupures);
+    }
 
   return String();
 }

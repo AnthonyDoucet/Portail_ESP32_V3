@@ -146,6 +146,14 @@ void initRTC(){
   PRINTLN("RTC Started");
 }
 
+void setRTCunixtime(uint32_t epoch){
+  if(!DS1307_RTC.isrunning()){
+    return;
+  }
+  DateTime dt(epoch);
+  DS1307_RTC.adjust(dt);
+}
+
 String getRTCDateStr(){
   if(!DS1307_RTC.isrunning()){
     return "RTC Not running";

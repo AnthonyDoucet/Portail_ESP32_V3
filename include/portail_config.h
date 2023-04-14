@@ -47,6 +47,8 @@
 
 #define WEB_USERNAME "user"         //Nom d'utilisateur SITE
 #define WEB_PASSWORD "1234"         //Mot de passe SITE
+#define WEB_ADMIN_USERNAME "admin"  //Nom d'utilisateur ADMINISTRATEUR SITE
+#define WEB_ADMIN_PASSWORD "admin"  //Mot de passe ADMINISTRATEUR SITE
 
 //######## MISC ########
 #define SHOW_DEBUG true             //Affichage debug
@@ -56,9 +58,9 @@
 #define HEURE_JOUR_DEBUT 6          //Heure debut de journée
 #define HEURE_JOUR_FIN 21           //Heure fin de journée
 
-#define SEUIL_AVANT_FORCE 10        //Nombre d'ouvertures sur batterie avant ouverture forcée 
-#define SEUIL_BATTERIE 3000         //Valeur en N,  N = V * (Vmax/1023)
-#define SEUIL_OFFSET 750            //Pour eviter les clignotements
+#define DEFAULT_SEUIL_AVANT_FORCE 10 //Nombre d'ouvertures sur batterie avant ouverture forcée 
+#define DEFAULT_SEUIL_BATTERIE 3000  //Valeur en N,  N = V * (Vmax/1023)
+#define DEFAULT_SEUIL_OFFSET 750     //Pour eviter les clignotements
 
 /*#######################
     Bat / Pin     /  N

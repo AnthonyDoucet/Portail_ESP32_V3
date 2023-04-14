@@ -15,7 +15,7 @@ void debug_loop();
 void initConnection();
 void initServer();
 void networkEvent(WiFiEvent_t event);
-void WebSocketEvent();
+void decodeParameters(AsyncWebServerRequest *request);
 String processor(const String &var);
 
 //######## utils.cpp ########
@@ -36,6 +36,7 @@ void lcdMenu();
 
 //RTC
 void initRTC();
+void setRTCunixtime(uint32_t epoch);
 String getRTCDateStr();
 String getRTCTimeStr();
 String to2digit(uint8_t nombre);
