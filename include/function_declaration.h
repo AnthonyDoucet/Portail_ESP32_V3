@@ -22,6 +22,7 @@ String processor(const String &var);
 //IO
 void initIO();
 void readInputs();
+void readADC();
 void writeOutputs();
 void blink(int pin, int time);
 
@@ -39,6 +40,7 @@ void initRTC();
 void setRTCunixtime(uint32_t epoch);
 String getRTCDateStr();
 String getRTCTimeStr();
+void updateTime();
 String to2digit(uint8_t nombre);
 
 //EEPROM

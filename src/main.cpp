@@ -23,8 +23,21 @@ void setup(){
 }
 
 //######## LOOP ########
+unsigned previousMillis[10];
 void loop(){
-  delayed_task();
+  
+  if((millis() - previousMillis[0]) > 1000){     //1 sec
+    previousMillis[0] = millis();
+    readADC();
+    updateTime();
+    lcdMenu();
+  }
+
+  if((millis() - previousMillis[1]) > 216000000){   //6h
+    previousMillis[2] = millis();
+    writeEEPROM();
+  }
+
   portail_process();
   writeOutputs();
   readInputs();
@@ -32,27 +45,4 @@ void loop(){
 
   if(shouldReboot)
     ESP.restart();
-}
-
-//######## TASK ########
-unsigned previousMillis[10] = {0};
-void delayed_task(){
-
-  if(millis() >= previousMillis[0] + 1000){     //1 sec
-    previousMillis[0] = millis();
-    lcdPrint(0,0,String(millis()/1000));
-    lcdPrint(1,0, ethernet_status);
-    lcdMenu();
-    rtc_now = DS1307_RTC.now();
-  }
-
-  if(millis() >= previousMillis[1] + 60000){   //1min
-    previousMillis[1] = millis();
-    //printLocalTime();
-  }
-
-  if(millis() >= previousMillis[2] + 3600000){   //1h
-    previousMillis[2] = millis();
-    writeEEPROM();
-  }
 }

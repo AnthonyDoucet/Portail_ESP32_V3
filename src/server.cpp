@@ -3,10 +3,18 @@
 
 //######## NETWORK ########
 void initConnection(){
-    DEBUGLN("starting Ethernet");
+    #if ENABLE_SOFT_AP
+    DEBUGLN("starting SOFTAP");
     WiFi.onEvent(networkEvent);
+    WiFi.mode(WIFI_MODE_AP);
+    WiFi.softAP(AP_SSID,AP_PASSWORD,1,AP_HIDDEN);
+    #endif
+
+    DEBUGLN("starting Ethernet");
     ETH.begin( SPI_MISO_GPIO, SPI_MOSI_GPIO, SPI_SCLK_GPIO, SPI_CS0_GPIO, SPI_INT0_GPIO, SPI_CLOCK_MHZ, ETH_SPI_HOST);
     //ETH.config(myIP, myGW, mySN, myDNS);
+
+    initServer(); //Start the webserver
 }
 
 void initServer(){
@@ -206,8 +214,6 @@ void networkEvent(WiFiEvent_t event){  //handle Ethernet connection event
       break;
 
     case ARDUINO_EVENT_ETH_GOT_IP:
-      ethernet_status = "Got IP, Ok     ";
-
       DEBUG(F("ETH MAC: "));
       DEBUG(ETH.macAddress());
       DEBUG(F(", IPv4: "));
@@ -216,8 +222,7 @@ void networkEvent(WiFiEvent_t event){  //handle Ethernet connection event
       DEBUG(ETH.subnetMask());
       DEBUG(F(", Gateway: "));
       DEBUGLN(ETH.gatewayIP());
-
-      initServer(); //Start the webserver
+      ethernet_status = ETH.localIP().toString();
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
@@ -267,7 +272,7 @@ void decodeParameters(AsyncWebServerRequest *request){
     }
 
     if (request->hasParam("ouvre")) {
-      state_pin_ouvre = !state_pin_ouvre;
+      state_pin_ouvre = true;
     }
 
     // Plage Horaire
@@ -341,10 +346,10 @@ String processor(const String &var){
       return String(nBat) + "n  " + String(vBat) + "v";
     }
     else if(var == "DATE_COUPURE"){
-      return date_derniere_coupure[0];
+      return date_derniere_coupure[date_derniere_coupure_increment - 1];
     }
     else if(var == "DATE_PRESENCE"){
-      return date_derniere_presence[0];
+      return date_derniere_presence[date_derniere_presence_increment - 1];
     }
     else if(var == "DATE_CYCLE_JOUR"){
       return date_dernier_cycle_jour;
@@ -368,7 +373,7 @@ String processor(const String &var){
 
     //OUVERTURE FORCEE
     else if(var == "DATE_FORCE"){
-      return date_dernier_force[0];
+      return date_dernier_force[date_dernier_force_increment - 1];
     }
     else if(var == "CMP_AVANT_FORCE"){
       return String(cmp_avant_force);

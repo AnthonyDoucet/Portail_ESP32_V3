@@ -16,17 +16,29 @@ void initIO(){
     pinMode(PIN_Force, OUTPUT);
     pinMode(PIN_Ouvre, OUTPUT);
     pinMode(PIN_DEBUG, OUTPUT);
+
+  // ADS1115
+  ADS.begin();         // Initialisation du module ADS1115
+  ADS.setGain(0);      // On prend le gain le plus bas (index 0), pour avoir la plus grande plage de mesure (6.144 volt)
+  ADS.setMode(0);      // On indique à l'ADC qu'on fera des mesures à la demande, et non en continu (0 = CONTINUOUS, 1 = SINGLE)
+  ADS.setDataRate(4);  // On spécifie la vitesse de mesure de tension qu'on souhaite, allant de 0 à 7 (7 étant le plus rapide, soit 860 échantillons par seconde)
+  ADS.readADC(0);      // Et on fait une lecture à vide, pour envoyer tous ces paramètres
 }
 
 uint32_t previousDebounce[4] = {0};
 bool oneTimeDebounce[4] = {true};
 void debounceBtn(){
-
   //Btn1
   if(state_pin_btn1 == true && oneTimeDebounce[0] == true){
     oneTimeDebounce[0] = false;
+    if(LCD_menu_pos == 0){
+      LCD_menu_pos = LCD_MENU_TAILLE;
+    }
+    else{
+      LCD_menu_pos--;
+    }
     last_time_btn_pressed = millis();
-    //todo
+    LCD_oneTime = true;
   }
   else if(state_pin_btn1 == false && oneTimeDebounce[0] == false){
     oneTimeDebounce[0] = true;
@@ -35,8 +47,14 @@ void debounceBtn(){
   //Btn2
   if(state_pin_btn2 == true && oneTimeDebounce[1] == true){
     oneTimeDebounce[1] = false;
+    if(LCD_menu_pos == LCD_MENU_TAILLE){
+      LCD_menu_pos = 0;
+    }
+    else{
+      LCD_menu_pos++;
+    }
     last_time_btn_pressed = millis();
-    //todo
+    LCD_oneTime = true;
   }
   else if(state_pin_btn2 == false && oneTimeDebounce[1] == false){
     oneTimeDebounce[1] = true;
@@ -46,7 +64,6 @@ void debounceBtn(){
   if(state_pin_btn3 == true && oneTimeDebounce[2] == true){
     oneTimeDebounce[2] = false;
     last_time_btn_pressed = millis();
-    //todo
   }
   else if(state_pin_btn3 == false && oneTimeDebounce[2] == false){
     oneTimeDebounce[2] = true;
@@ -56,18 +73,13 @@ void debounceBtn(){
   if(state_pin_btn4 == true && oneTimeDebounce[3] == true){
     oneTimeDebounce[3] = false;
     last_time_btn_pressed = millis();
-    //todo
   }
   else if(state_pin_btn4 == false && oneTimeDebounce[3] == false){
     oneTimeDebounce[3] = true;
   }
-
 }
 
 void readInputs(){
-  nBat = analogRead(PIN_vBat);
-  vBat = (double)nBat * 0.0068376068;
-
   state_pin_btn1 = !digitalRead(PIN_Bouton1);
   state_pin_btn2 = !digitalRead(PIN_Bouton2);
   state_pin_btn3 = !digitalRead(PIN_Bouton3);
@@ -77,6 +89,12 @@ void readInputs(){
   state_pin_cycle = !digitalRead(PIN_Cycle);
 
   debounceBtn();
+}
+
+void readADC(){
+  nBat = ADS.readADC(0);           // Mesure de tension de la broche A0, par rapport à la masse
+  vBat = ADS.toVoltage(nBat);
+  //vBat = 5*float(nBat/2^15);
 }
 
 void writeOutputs(){
@@ -126,6 +144,43 @@ void lcdClear(uint8_t line){
 }
 
 void lcdMenu(){
+
+  if(LCD_menu_pos <= LCD_MENU_TAILLE){
+
+    if(LCD_oneTime){
+      LCD_oneTime = false;
+      lcdClear(2);
+    }
+
+    switch(LCD_menu_pos){
+        case 0:
+            lcdPrint(0, getRTCDateStr() + "         ");
+            lcdPrint(1, getRTCTimeStr() + "         ");
+            break;
+        case 1:
+            lcdPrint(0,"Compteur:       ");
+            lcdPrint(1,"Jour:"+ String(cmp_journalier_jour) + " Nuit:"+ String(cmp_journalier_nuit) + "     ");
+            break;
+        case 2:
+            lcdPrint(0,"Tension Batterie");
+            lcdPrint(1,String(vBat) + "V              ");
+            break;
+        case 3:
+            lcdPrint(0,"Uptime:       ");
+            lcdPrint(1,String(millis()/1000));
+            break;
+        case 4:
+            lcdPrint(0,"Ethernet:     ");
+            lcdPrint(1, ethernet_status);
+            break;
+
+        default:
+            lcdPrint(0,"Menu:"+String(LCD_menu_pos));
+            break;
+    }
+  }
+
+
   if(millis() >= last_time_btn_pressed + (LCD_BACKLIGHT_TIMEOUT*1000)){
     lcd.noBacklight();
   }
@@ -142,7 +197,12 @@ void initRTC(){
     PRINTLN("Couldn't find RTC");
     return;
   }
-  //DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  
+  if (! DS1307_RTC.isrunning()) {
+    DEBUGLN("RTC is NOT running, let's set the time!");
+    DS1307_RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
   PRINTLN("RTC Started");
 }
 
@@ -168,6 +228,10 @@ String getRTCTimeStr(){
   return to2digit(rtc_now.hour()) + ":" + to2digit(rtc_now.minute()) + ":" + to2digit(rtc_now.second());
 }
 
+void updateTime(){
+  rtc_now = DS1307_RTC.now();
+}
+
 String to2digit(uint8_t nombre){
   String resultat;
   if(nombre < 10)
@@ -177,38 +241,6 @@ String to2digit(uint8_t nombre){
 
 //######## EEPROM ########
 void initEEPROM(){
-
-  //eeprom.begin("my-app", false); 
-
-  // Remove all preferences under the opened namespace
-  //preferences.clear();
-
-  // Or remove the counter key only
-  //preferences.remove("counter");
-
-  // Get the counter value, if the key does not exist, return a default value of 0
-  // Note: Key name is limited to 15 chars.
-  //unsigned int counter = eeprom.getUInt("counter", 0);
-
-  // Increase counter by 1
-  //counter++;
-
-  // Print the counter to Serial Monitor
-  //Serial.printf("Current counter value: %u\n", counter);
-
-  // Store the counter to the Preferences
-  //eeprom.putUInt("counter", counter);
-
-  // Close the Preferences
-  //eeprom.end();
-
-  // Wait 10 seconds
-  //Serial.println("Restarting in 10 seconds...");
-  //delay(10000);
-
-  // Restart ESP
-  //ESP.restart();
-
   PRINTLN("Init read EEPROM");
   eeprom.begin("data", false); //Read/Write
   reboot_counter = eeprom.getUShort("reboot", 0);
@@ -223,6 +255,25 @@ void readEEPROM(){
   PRINTLN("Read EEPROM");
   eeprom.begin("data", true); //Read only
   saved_uptime = eeprom.getUInt("saved_uptime", 0);
+
+  heure_hiver    != eeprom.getBool("heure_hiver",0);
+  horaireMatin_m != eeprom.getUChar("Matin_m", 0);
+  horaireNuit_h  != eeprom.getUChar("Nuit_h", 0);
+  horaireNuit_m  != eeprom.getUChar("Nuit_m", 0);
+  //COMPTEUR AVANT FORCE
+  seuil_avant_force  != eeprom.getUShort("force", 0);
+  //COMPTEURS
+  cmp_ouvertures_jour != eeprom.getUShort("cmp_o_j", 0);
+  cmp_ouvertures_nuit != eeprom.getUShort("cmp_o_n", 0);
+  //COMPTEURS JOURNALIER
+  cmp_journalier_jour != eeprom.getUShort("cmp_j_j", 0);
+  cmp_journalier_nuit != eeprom.getUShort("cmp_j_n", 0);
+  //COMPTEURS AUX
+  cmp_aux_ouvertures_jour != eeprom.getUShort("cmp_o_a_j", 0);
+  cmp_aux_ouvertures_nuit != eeprom.getUShort("cmp_o_a_n", 0);
+  //COMPTEUR COUPURES SECTEUR!
+  cmp_coupures != eeprom.getUShort("cmp_coupures", 0);
+  
   eeprom.end();
 }
 
@@ -230,5 +281,25 @@ void writeEEPROM(){
   DEBUGLN("Write EEPROM");
   eeprom.begin("data", false); //Read/Write
   eeprom.putULong("saved_uptime",millis()/1000);
+
+  if(heure_hiver    != eeprom.getBool("heure_hiver",0))   { eeprom.putBool("heure_hiver",heure_hiver); }
+  if(horaireMatin_h != eeprom.getUChar("Matin_h", 0))     { eeprom.putUChar("Matin_h",horaireMatin_h); }
+  if(horaireMatin_m != eeprom.getUChar("Matin_m", 0))     { eeprom.putUChar("Matin_m",horaireMatin_m); }
+  if(horaireNuit_h  != eeprom.getUChar("Nuit_h", 0))      { eeprom.putUChar("Nuit_h",horaireNuit_h); }
+  if(horaireNuit_m  != eeprom.getUChar("Nuit_m", 0))      { eeprom.putUChar("Nuit_m",horaireNuit_m); }
+  //COMPTEUR AVANT FORCE
+  if(seuil_avant_force  != eeprom.getUShort("force", 0))  { eeprom.getUShort("force",seuil_avant_force); }
+  //COMPTEURS
+  if(cmp_ouvertures_jour != eeprom.getUShort("cmp_o_j", 0))   { eeprom.getUShort("cmp_o_j",cmp_ouvertures_jour); }
+  if(cmp_ouvertures_nuit != eeprom.getUShort("cmp_o_n", 0))   { eeprom.getUShort("cmp_o_n",cmp_ouvertures_nuit); }
+  //COMPTEURS JOURNALIER
+  if(cmp_journalier_jour != eeprom.getUShort("cmp_j_j", 0))   { eeprom.getUShort("cmp_j_j",cmp_journalier_jour); }
+  if(cmp_journalier_nuit != eeprom.getUShort("cmp_j_n", 0))   { eeprom.getUShort("cmp_j_n",cmp_journalier_nuit); }
+  //COMPTEURS AUX
+  if(cmp_aux_ouvertures_jour != eeprom.getUShort("cmp_o_a_j", 0))   { eeprom.getUShort("cmp_o_a_j",cmp_aux_ouvertures_jour); }
+  if(cmp_aux_ouvertures_nuit != eeprom.getUShort("cmp_o_a_n", 0))   { eeprom.getUShort("cmp_o_a_n",cmp_aux_ouvertures_nuit); }
+  //COMPTEUR COUPURES SECTEUR!
+  if(cmp_coupures != eeprom.getUShort("cmp_coupures", 0))   { eeprom.getUShort("cmp_coupures",cmp_coupures); }
+  
   eeprom.end();
 }

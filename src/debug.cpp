@@ -1,7 +1,8 @@
 #include <main.h>
 
 uint32_t previousTimeLoop, loopCounter;
-#define debug_loop_delay 5
+#define debug_loop_delay 2
+
 void debug_loop(){
   loopCounter++;
   if(millis() >= previousTimeLoop + (debug_loop_delay*1000)){
@@ -13,5 +14,7 @@ void debug_loop(){
     DEBUGLN("WIFI: "     + WiFi.localIP().toString());
     DEBUGLN("HEAP: "     + String(ESP.getFreeHeap()));
     DEBUGLN("RTC: "      + getRTCDateStr() + " " + getRTCTimeStr());
+    DEBUGLN("ADC: "      + String(nBat));
+    DEBUGLN("ADC (mV): "      + String(vBat));
   }
 }

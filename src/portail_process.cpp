@@ -2,122 +2,126 @@
 
 //######## PROGRAM ########
 void portail_process(){
-/*
-  gestionCycle();
 
-  if(secteur == false && secteurOneTime == true){ //1 FOIS PAR COUPURE SECTEUR
+  cycle_en_cours = state_pin_cycle; //Status du cycle definie par etat de la broche (amelioration ?)
+  secteur = state_pin_secteur; //
+
+  if(rtc_now.day() != previous_day){  //Si nouvelle journée reset des compteurs journaliers
+    previous_day = rtc_now.day();
+    cmp_journalier_jour = 0;
+    cmp_journalier_nuit = 0;
+  }
+
+  if(cycle_en_cours == true && cycleOneTime == true){ //1 Fois par cycle
+    cycleOneTime = false;
+    cycle_process();
+  }
+  else if(cycle_en_cours == false && cycleOneTime == false){ //Attente d'un front descendant
+    cycleOneTime = true;
+  }
+
+
+  if(secteur == false && secteurOneTime == true){         //1 FOIS PAR COUPURE SECTEUR
       secteurOneTime = false;
 
-      if(incrementCoupureSecteur == 10){
-        incrementCoupureSecteur = 0;
+      //Enregistrement de la date de coupure
+      if(date_derniere_coupure_increment == 10){
+        date_derniere_coupure_increment = 0;
       }
-      dateDerniereCoupure[incrementCoupureSecteur++] = stringDate + " - " + stringHeure;   //Enregistrer date
-      Serial.println("COUPURE SECTEUR");
-      cmpCoupures++;
-  }
-  else if(secteur == false){  //TANT QUE LE SECTEUR N'EST PAS REVENU
-    //GESTION SUR BATTERIE
-    if( (nBat < SEUIL_BATTERIE) || (cmpAvantForce >= seuilAvantForce) ){    //Si N batterie en dessous du seuil, Force ouverture
-      ouvreForce = true;
-    }
-    else if(nBat > SEUIL_BATTERIE + SEUIL_OFFSET){  //Si N batterie au dessus du seuil + Offset, Desactiver force ouverture
-      ouvreForce = false;
-    }
+      date_derniere_coupure[date_derniere_coupure_increment++] = getRTCDateStr() + " - " + getRTCTimeStr();
 
-    if(cmpAvantForce >= SEUIL_AVANT_FORCE){
-      ouvreForce = true;
+      //Ajout au compteur de coupures
+      cmp_coupures++;
+  }
+  else if(secteur == false && secteurOneTime == false){   //TANT QUE LE SECTEUR N'EST PAS REVENU
+    //Gestion de la batterie
+    if( (nBat < DEFAULT_SEUIL_BATTERIE) || (cmp_avant_force >= seuil_avant_force) ){  //Si N batterie en dessous du seuil OU seuil atteint -> Force ouverture
+      ouvre_force = true;
+    }
+    else if(nBat > DEFAULT_SEUIL_BATTERIE + DEFAULT_SEUIL_OFFSET){  //Si N batterie au dessus du (seuil + Offset), Desactiver force ouverture
+      ouvre_force = false;
     }
   }
-  else if(secteur == true && secteurOneTime == false){  //SI RETOUR SECTEUR, Desactiver force ouverture
-    
-    if(incrementPresenceSecteur == 10){
-      incrementPresenceSecteur = 0;
+  else if(secteur == true && secteurOneTime == false){    //SI RETOUR SECTEUR, Desactiver force ouverture
+
+    //Enregistrer date du retour secteur
+    if(date_derniere_presence_increment == 10){
+      date_derniere_presence_increment = 0;
     }
-    dateDernierePresence[incrementPresenceSecteur++] = stringDate + " - " + stringHeure;  //Enregistrer date
-    cmpAvantForce = 0; // reset si retour du secteur
-    cycle(); //Cycle pour relancer le portail
-    ouvreForce = false;
-    ouvreForceWEB = false;
-    Serial.println("RETOUR SECTEUR");
+    date_derniere_presence[date_derniere_presence_increment++] = getRTCDateStr() + " - " + getRTCTimeStr();
+
+    cmp_avant_force = 0;    // Reset si retour du secteur
+    blink(PIN_Cycle, 200);  // Cycle pour relancer le portail
+    ouvre_force = false;    //Desactiver l'ouverture forcée car retour secteur = fonctionnement normal
+
+    PRINTLN("RETOUR SECTEUR");
     secteurOneTime = true;
   }
-  else{ ouvreForce = false; }
-
-  gestionWebInput();
   
-  if(ouvreForce){
-    if(incrementForce == 10){
-      incrementForce = 0;
+  //Si ouverture forcée, enregistrement de la date
+  if(ouvre_force == true && forceOneTime == false){
+    forceOneTime = true;
+    if(date_dernier_force_increment == 10){
+      date_dernier_force_increment = 0;
     }
-    dateDernierForce[incrementForce++] = stringDate + " - " + stringHeure;  //Enregistrer date
+    date_dernier_force[date_dernier_force_increment++] = getRTCDateStr() + " - " + getRTCTimeStr();  //Enregistrer date
+  }
+  else if(ouvre_force == false && forceOneTime == true){
+    forceOneTime = false;
   }
 
-  digitalWrite(PIN_Force, ouvreForce);
-*/
 }
 
 void cycle_process(){
-/*
-  if(cycleEnCours == true && cycleOneTime == true){
-    cycleOneTime = false;
 
-    if(incrementDateCycle == 10){
-      incrementDateCycle = 0;
-    }
-    dateCycle[incrementDateCycle++] = stringDate + " - " + stringHeure;
+  //Enregistrement de la date du cycle
+  if(date_cycle_increment == 20){
+    date_cycle_increment = 0;
+  }
+  date_cycle[date_cycle_increment++] = getRTCDateStr() + " - " + getRTCTimeStr();
 
 
-    //Serial.println( "Cycle H:" + (String)hour() + " " + (String)horaireMatin[0] + " " + (String)horaireNuit[0] + "   M:" + minute() + " " + (String)horaireMatin[1] + " " + (String)horaireNuit[1]);
-    
-    bool jour = false;
-    bool hMinPassed = false;
-    if(hour() > horaireMatin[0]){
-      //Serial.println("H > Matin");
+  bool jour = false;
+  bool hMinPassed = false;
+
+  //Heure dans la plage horaire ?
+  if(rtc_now.hour() > horaireMatin_h){
+    hMinPassed = true;
+  }
+  else if(rtc_now.hour() == horaireMatin_h){
+    if(rtc_now.minute() >= horaireMatin_m){
       hMinPassed = true;
     }
-    else if(hour() == horaireMatin[0]){
-      //Serial.println("H == Matin");
-      if(minute() >= horaireMatin[1]){
-        //Serial.println("M Matin");
-        hMinPassed = true;
-      }
-    }
+  }
 
-    if(hMinPassed){
-      if(hour() < horaireNuit[0]){
-        //Serial.println("H < Nuit");
+  //Jour ou nuit
+  if(hMinPassed){
+    if(rtc_now.hour() < horaireNuit_h){
+      jour = true;
+    }
+    else if(rtc_now.hour() == horaireNuit_h){
+      if(rtc_now.minute() < horaireNuit_m){
         jour = true;
       }
-      else if(hour() == horaireNuit[0]){
-        //Serial.println("H == Nuit");
-        if(minute() < horaireNuit[1]){
-          //Serial.println("M Nuit");
-          jour = true;
-        }
-      }
     }
-
-    //Serial.println("Jour:" + (String)jour);
-    if(jour == true){
-        cmpJournalierJour++;
-        cmpOuverturesJour++;
-        cmpAuxOuverturesJour++;
-        dateDernierCycleJour = stringDate + " - " + stringHeure;
-    }
-    else{
-        cmpJournalierNuit++;
-        cmpOuverturesNuit++;
-        cmpAuxOuverturesNuit++;
-        dateDernierCycleNuit = stringDate + " - " + stringHeure;
-    }
-
-    if(secteur == false){
-      cmpAvantForce++;
-    }
-
   }
-  else if(cycleEnCours == false && cycleOneTime == false){
-    cycleOneTime = true;
+
+  //Mise a jour des compteurs
+  if(jour){
+      cmp_journalier_jour++;
+      cmp_ouvertures_jour++;
+      cmp_aux_ouvertures_jour++;
+      date_dernier_cycle_jour = getRTCDateStr() + " - " + getRTCTimeStr();
   }
-*/
+  else{
+      cmp_journalier_nuit++;
+      cmp_ouvertures_nuit++;
+      cmp_aux_ouvertures_nuit++;
+      date_dernier_cycle_nuit = getRTCDateStr() + " - " + getRTCTimeStr();
+  }
+
+  //S'il n'y a pas de secteur
+  if(secteur == false){
+    cmp_avant_force++;
+  }
 }
