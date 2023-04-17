@@ -17,12 +17,12 @@ void initIO(){
     pinMode(PIN_Ouvre, OUTPUT);
     pinMode(PIN_DEBUG, OUTPUT);
 
-  // ADS1115
-  ADS.begin();         // Initialisation du module ADS1115
-  ADS.setGain(0);      // On prend le gain le plus bas (index 0), pour avoir la plus grande plage de mesure (6.144 volt)
-  ADS.setMode(0);      // On indique à l'ADC qu'on fera des mesures à la demande, et non en continu (0 = CONTINUOUS, 1 = SINGLE)
-  ADS.setDataRate(4);  // On spécifie la vitesse de mesure de tension qu'on souhaite, allant de 0 à 7 (7 étant le plus rapide, soit 860 échantillons par seconde)
-  ADS.readADC(0);      // Et on fait une lecture à vide, pour envoyer tous ces paramètres
+    // ADS1115
+    ADS.begin();         // Initialisation du module ADS1115
+    ADS.setGain(0);      // On prend le gain le plus bas (index 0), pour avoir la plus grande plage de mesure (6.144 volt)
+    ADS.setMode(0);      // On indique à l'ADC qu'on fera des mesures à la demande, et non en continu (0 = CONTINUOUS, 1 = SINGLE)
+    ADS.setDataRate(4);  // On spécifie la vitesse de mesure de tension qu'on souhaite, allant de 0 à 7 (7 étant le plus rapide, soit 860 échantillons par seconde)
+    ADS.readADC(0);      // Et on fait une lecture à vide, pour envoyer tous ces paramètres
 }
 
 uint32_t previousDebounce[4] = {0};
@@ -31,12 +31,6 @@ void debounceBtn(){
   //Btn1
   if(state_pin_btn1 == true && oneTimeDebounce[0] == true){
     oneTimeDebounce[0] = false;
-    if(LCD_menu_pos == 0){
-      LCD_menu_pos = LCD_MENU_TAILLE;
-    }
-    else{
-      LCD_menu_pos--;
-    }
     last_time_btn_pressed = millis();
     LCD_oneTime = true;
   }
@@ -47,14 +41,13 @@ void debounceBtn(){
   //Btn2
   if(state_pin_btn2 == true && oneTimeDebounce[1] == true){
     oneTimeDebounce[1] = false;
-    if(LCD_menu_pos == LCD_MENU_TAILLE){
-      LCD_menu_pos = 0;
+    if(LCD_menu_pos == 0){
+      LCD_menu_pos = LCD_MENU_TAILLE;
     }
     else{
-      LCD_menu_pos++;
+      LCD_menu_pos--;
     }
     last_time_btn_pressed = millis();
-    LCD_oneTime = true;
   }
   else if(state_pin_btn2 == false && oneTimeDebounce[1] == false){
     oneTimeDebounce[1] = true;
@@ -63,6 +56,13 @@ void debounceBtn(){
   //Btn3
   if(state_pin_btn3 == true && oneTimeDebounce[2] == true){
     oneTimeDebounce[2] = false;
+    if(LCD_menu_pos == LCD_MENU_TAILLE){
+      LCD_menu_pos = 0;
+    }
+    else{
+      LCD_menu_pos++;
+    }
+    LCD_oneTime = true;
     last_time_btn_pressed = millis();
   }
   else if(state_pin_btn3 == false && oneTimeDebounce[2] == false){
@@ -85,21 +85,21 @@ void readInputs(){
   state_pin_btn3 = !digitalRead(PIN_Bouton3);
   state_pin_btn4 = !digitalRead(PIN_Bouton4);
 
-  state_pin_secteur = !digitalRead(PIN_PresenceSecteur);
-  state_pin_cycle = !digitalRead(PIN_Cycle);
+  secteur = !digitalRead(PIN_PresenceSecteur);
+  cycle_en_cours = !digitalRead(PIN_Cycle);
 
   debounceBtn();
 }
 
 void readADC(){
   nBat = ADS.readADC(0);           // Mesure de tension de la broche A0, par rapport à la masse
-  vBat = ADS.toVoltage(nBat);
-  //vBat = 5*float(nBat/2^15);
+  //vBat = ADS.toVoltage(nBat);
+  vBat = float(nBat*1.0988)/1000;
 }
 
 void writeOutputs(){
-  digitalWrite(PIN_Force, state_pin_force);
-  digitalWrite(PIN_Ouvre, state_pin_ouvre);
+  digitalWrite(PIN_Force, ouvre_force);
+  //digitalWrite(PIN_Ouvre, ouvre_normal);
 }
 
 void blink(int pin, int time){
@@ -248,32 +248,88 @@ void initEEPROM(){
   eeprom.putUShort("reboot", reboot_counter);
   eeprom.end();
 
+  //writeEEPROM_BRUTE();
   readEEPROM();
 }
 
 void readEEPROM(){
   PRINTLN("Read EEPROM");
   eeprom.begin("data", true); //Read only
-  saved_uptime = eeprom.getUInt("saved_uptime", 0);
+  saved_uptime = eeprom.getUInt("saved_uptime");
 
-  heure_hiver    != eeprom.getBool("heure_hiver",0);
-  horaireMatin_m != eeprom.getUChar("Matin_m", 0);
-  horaireNuit_h  != eeprom.getUChar("Nuit_h", 0);
-  horaireNuit_m  != eeprom.getUChar("Nuit_m", 0);
+  heure_hiver    = eeprom.getBool("heure_hiver");
+  horaireMatin_m = eeprom.getUChar("Matin_m");
+  horaireNuit_h  = eeprom.getUChar("Nuit_h");
+  horaireNuit_m  = eeprom.getUChar("Nuit_m");
   //COMPTEUR AVANT FORCE
-  seuil_avant_force  != eeprom.getUShort("force", 0);
+  seuil_avant_force  = eeprom.getUShort("force");
   //COMPTEURS
-  cmp_ouvertures_jour != eeprom.getUShort("cmp_o_j", 0);
-  cmp_ouvertures_nuit != eeprom.getUShort("cmp_o_n", 0);
+  cmp_ouvertures_jour = eeprom.getUShort("cmp_o_j");
+  cmp_ouvertures_nuit = eeprom.getUShort("cmp_o_n");
   //COMPTEURS JOURNALIER
-  cmp_journalier_jour != eeprom.getUShort("cmp_j_j", 0);
-  cmp_journalier_nuit != eeprom.getUShort("cmp_j_n", 0);
+  cmp_journalier_jour = eeprom.getUShort("cmp_j_j");
+  cmp_journalier_nuit = eeprom.getUShort("cmp_j_n");
   //COMPTEURS AUX
-  cmp_aux_ouvertures_jour != eeprom.getUShort("cmp_o_a_j", 0);
-  cmp_aux_ouvertures_nuit != eeprom.getUShort("cmp_o_a_n", 0);
+  cmp_aux_ouvertures_jour = eeprom.getUShort("cmp_o_a_j");
+  cmp_aux_ouvertures_nuit = eeprom.getUShort("cmp_o_a_n");
   //COMPTEUR COUPURES SECTEUR!
-  cmp_coupures != eeprom.getUShort("cmp_coupures", 0);
-  
+  cmp_coupures = eeprom.getUShort("cmp_coupures");
+
+  for(int i=0 ; i < 20 ; i++){
+    date_cycle[i] = eeprom.getString("d_cycle_" + static_cast<char>(i));
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    date_derniere_coupure[i] = eeprom.getString("d_coupure_" + static_cast<char>(i));
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    date_derniere_presence[i] = eeprom.getString("d_presence_" + static_cast<char>(i));
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    date_dernier_force[i] = eeprom.getString("d_force_" + static_cast<char>(i));
+  }
+
+  eeprom.end();
+}
+
+void writeEEPROM_BRUTE(){
+  DEBUGLN("Write EEPROM BRUTEFORCE");
+  eeprom.begin("data", false); //Read/Write
+
+  eeprom.putULong("saved_uptime",millis()/1000);
+  eeprom.putBool("heure_hiver",heure_hiver);
+  eeprom.putUChar("Matin_h",horaireMatin_h);
+  eeprom.putUChar("Matin_m",horaireMatin_m);
+  eeprom.putUChar("Nuit_h",horaireNuit_h);
+  eeprom.putUChar("Nuit_m",horaireNuit_m);
+
+  eeprom.putUShort("force",seuil_avant_force);
+  eeprom.putUShort("cmp_o_j",cmp_ouvertures_jour);
+  eeprom.putUShort("cmp_o_n",cmp_ouvertures_nuit);
+  eeprom.putUShort("cmp_j_j",cmp_journalier_jour);
+  eeprom.putUShort("cmp_j_n",cmp_journalier_nuit);
+  eeprom.putUShort("cmp_o_a_j",cmp_aux_ouvertures_jour);
+  eeprom.putUShort("cmp_o_a_n",cmp_aux_ouvertures_nuit);
+  eeprom.putUShort("cmp_coupures",cmp_coupures);
+
+  for(int i=0 ; i < 20 ; i++){
+    eeprom.putString("d_cycle_"+static_cast<char>(i), date_cycle[i]);
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    eeprom.putString("d_coupure_"+static_cast<char>(i), date_derniere_coupure[i]);
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    eeprom.putString("d_presence_"+static_cast<char>(i), date_derniere_presence[i]);
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    eeprom.putString("d_force_"+static_cast<char>(i), date_dernier_force[i]);
+  }
+
   eeprom.end();
 }
 
@@ -282,24 +338,49 @@ void writeEEPROM(){
   eeprom.begin("data", false); //Read/Write
   eeprom.putULong("saved_uptime",millis()/1000);
 
-  if(heure_hiver    != eeprom.getBool("heure_hiver",0))   { eeprom.putBool("heure_hiver",heure_hiver); }
-  if(horaireMatin_h != eeprom.getUChar("Matin_h", 0))     { eeprom.putUChar("Matin_h",horaireMatin_h); }
-  if(horaireMatin_m != eeprom.getUChar("Matin_m", 0))     { eeprom.putUChar("Matin_m",horaireMatin_m); }
-  if(horaireNuit_h  != eeprom.getUChar("Nuit_h", 0))      { eeprom.putUChar("Nuit_h",horaireNuit_h); }
-  if(horaireNuit_m  != eeprom.getUChar("Nuit_m", 0))      { eeprom.putUChar("Nuit_m",horaireNuit_m); }
+  if(heure_hiver    != eeprom.getBool("heure_hiver"))   { eeprom.putBool("heure_hiver",heure_hiver); }
+  if(horaireMatin_h != eeprom.getUChar("Matin_h"))     { eeprom.putUChar("Matin_h",horaireMatin_h); }
+  if(horaireMatin_m != eeprom.getUChar("Matin_m"))     { eeprom.putUChar("Matin_m",horaireMatin_m); }
+  if(horaireNuit_h  != eeprom.getUChar("Nuit_h"))      { eeprom.putUChar("Nuit_h",horaireNuit_h); }
+  if(horaireNuit_m  != eeprom.getUChar("Nuit_m"))      { eeprom.putUChar("Nuit_m",horaireNuit_m); }
   //COMPTEUR AVANT FORCE
-  if(seuil_avant_force  != eeprom.getUShort("force", 0))  { eeprom.getUShort("force",seuil_avant_force); }
+  if(seuil_avant_force  != eeprom.getUShort("force"))  { eeprom.putUShort("force",seuil_avant_force); }
   //COMPTEURS
-  if(cmp_ouvertures_jour != eeprom.getUShort("cmp_o_j", 0))   { eeprom.getUShort("cmp_o_j",cmp_ouvertures_jour); }
-  if(cmp_ouvertures_nuit != eeprom.getUShort("cmp_o_n", 0))   { eeprom.getUShort("cmp_o_n",cmp_ouvertures_nuit); }
+  if(cmp_ouvertures_jour != eeprom.getUShort("cmp_o_j"))   { eeprom.putUShort("cmp_o_j",cmp_ouvertures_jour); }
+  if(cmp_ouvertures_nuit != eeprom.getUShort("cmp_o_n"))   { eeprom.putUShort("cmp_o_n",cmp_ouvertures_nuit); }
   //COMPTEURS JOURNALIER
-  if(cmp_journalier_jour != eeprom.getUShort("cmp_j_j", 0))   { eeprom.getUShort("cmp_j_j",cmp_journalier_jour); }
-  if(cmp_journalier_nuit != eeprom.getUShort("cmp_j_n", 0))   { eeprom.getUShort("cmp_j_n",cmp_journalier_nuit); }
+  if(cmp_journalier_jour != eeprom.getUShort("cmp_j_j"))   { eeprom.putUShort("cmp_j_j",cmp_journalier_jour); }
+  if(cmp_journalier_nuit != eeprom.getUShort("cmp_j_n"))   { eeprom.putUShort("cmp_j_n",cmp_journalier_nuit); }
   //COMPTEURS AUX
-  if(cmp_aux_ouvertures_jour != eeprom.getUShort("cmp_o_a_j", 0))   { eeprom.getUShort("cmp_o_a_j",cmp_aux_ouvertures_jour); }
-  if(cmp_aux_ouvertures_nuit != eeprom.getUShort("cmp_o_a_n", 0))   { eeprom.getUShort("cmp_o_a_n",cmp_aux_ouvertures_nuit); }
+  if(cmp_aux_ouvertures_jour != eeprom.getUShort("cmp_o_a_j"))   { eeprom.putUShort("cmp_o_a_j",cmp_aux_ouvertures_jour); }
+  if(cmp_aux_ouvertures_nuit != eeprom.getUShort("cmp_o_a_n"))   { eeprom.putUShort("cmp_o_a_n",cmp_aux_ouvertures_nuit); }
   //COMPTEUR COUPURES SECTEUR!
-  if(cmp_coupures != eeprom.getUShort("cmp_coupures", 0))   { eeprom.getUShort("cmp_coupures",cmp_coupures); }
+  if(cmp_coupures != eeprom.getUShort("cmp_coupures"))   { eeprom.putUShort("cmp_coupures",cmp_coupures); }
   
+
+  for(int i=0 ; i < 20 ; i++){
+    if(date_cycle[i] != eeprom.getString("d_cycle_"  + static_cast<char>(i))){
+      eeprom.putString("d_cycle_"+static_cast<char>(i), date_cycle[i]);
+    };
+  }
+  
+  for(int i=0 ; i < 10 ; i++){
+    if(date_derniere_coupure[i] != eeprom.getString("d_coupure_"  + static_cast<char>(i))){
+      eeprom.putString("d_coupure_"+static_cast<char>(i), date_derniere_coupure[i]);
+    };
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    if(date_derniere_presence[i] != eeprom.getString("d_presence_"  + static_cast<char>(i))){
+      eeprom.putString("d_presence_"+static_cast<char>(i), date_derniere_presence[i]);
+    };
+  }
+
+  for(int i=0 ; i < 10 ; i++){
+    if(date_dernier_force[i] != eeprom.getString("d_force_"  + static_cast<char>(i))){
+      eeprom.putString("d_force_"+static_cast<char>(i), date_dernier_force[i]);
+    };
+  }
+
   eeprom.end();
 }

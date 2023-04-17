@@ -46,6 +46,7 @@ String to2digit(uint8_t nombre);
 //EEPROM
 void initEEPROM();
 void readEEPROM();
+void writeEEPROM_BRUTE();
 void writeEEPROM();
 
 #endif

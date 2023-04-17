@@ -33,8 +33,8 @@ void loop(){
     lcdMenu();
   }
 
-  if((millis() - previousMillis[1]) > 216000000){   //6h
-    previousMillis[2] = millis();
+  if((millis() - previousMillis[1]) > 216000000){   //6h 
+    previousMillis[1] = millis();
     writeEEPROM();
   }
 

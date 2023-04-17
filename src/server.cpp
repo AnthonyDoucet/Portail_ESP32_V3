@@ -14,7 +14,6 @@ void initConnection(){
     ETH.begin( SPI_MISO_GPIO, SPI_MOSI_GPIO, SPI_SCLK_GPIO, SPI_CS0_GPIO, SPI_INT0_GPIO, SPI_CLOCK_MHZ, ETH_SPI_HOST);
     //ETH.config(myIP, myGW, mySN, myDNS);
 
-    initServer(); //Start the webserver
 }
 
 void initServer(){
@@ -103,12 +102,12 @@ void initServer(){
       str += "state_pin_btn2:" + String(state_pin_btn2) + "\n";
       str += "state_pin_btn3:" + String(state_pin_btn3) + "\n";
       str += "state_pin_btn4:" + String(state_pin_btn4) + "\n";
-      str += "state_pin_secteur:" + String(state_pin_secteur) + "\n";
-      str += "state_pin_cycle:" + String(state_pin_cycle) + "\n\n";
+      str += "state_pin_secteur:" + String(secteur) + "\n";
+      str += "state_pin_cycle:" + String(cycle_en_cours) + "\n\n";
 
       str += "-- OUTPUT --\n";
-      str += "state_pin_force:" + String(state_pin_force) + "\n";
-      str += "state_pin_ouvre:" + String(state_pin_ouvre) + "\n\n";
+      str += "state_pin_force:" + String(ouvre_force) + "\n";
+      str += "state_pin_ouvre:" + String(ouvre_normal) + "\n\n";
 
       str += "-- DEBUG --\n";
       str += "RTC Time:" + getRTCDateStr() + " " + getRTCTimeStr() + "\n";
@@ -223,6 +222,8 @@ void networkEvent(WiFiEvent_t event){  //handle Ethernet connection event
       DEBUG(F(", Gateway: "));
       DEBUGLN(ETH.gatewayIP());
       ethernet_status = ETH.localIP().toString();
+
+      initServer(); //Start the webserver
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
@@ -268,11 +269,12 @@ void decodeParameters(AsyncWebServerRequest *request){
     }
 
     if (request->hasParam("force")) {
-      state_pin_force = !state_pin_force;
+      ouvre_force = !ouvre_force;
     }
 
     if (request->hasParam("ouvre")) {
-      state_pin_ouvre = true;
+      //state_pin_ouvre = true;
+      blink(PIN_Ouvre,200);
     }
 
     // Plage Horaire
@@ -332,18 +334,16 @@ String processor(const String &var){
       return getRTCTimeStr();
     }
     else if(var == "CYCLE"){
-      return (state_pin_cycle) ? "cVert" : "cGris";
+      return (cycle_en_cours) ? "cVert" : "cGris";
     }
     else if(var == "FORCE"){
-      if(state_pin_cycle)
-        return "cBleu";
-      return (state_pin_force) ? "cVert" : "cGris";
+      return (ouvre_force) ? "cBleu" : "cGris";
     }
     else if(var == "PRESENCE_SECTEUR"){
-      return (state_pin_secteur) ? "Oui" : "Non";
+      return (secteur) ? "Oui" : "Non";
     }
     else if(var == "VBAT"){
-      return String(nBat) + "n  " + String(vBat) + "v";
+      return String(vBat) + "v";
     }
     else if(var == "DATE_COUPURE"){
       return date_derniere_coupure[date_derniere_coupure_increment - 1];

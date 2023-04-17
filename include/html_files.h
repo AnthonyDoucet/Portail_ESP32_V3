@@ -7,7 +7,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="15">
+    <meta http-equiv="refresh" content="5">
     <title>Portail</title>
     <style>
         body {
@@ -37,9 +37,6 @@ const char index_html[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <div>
-        <a href="/debug">Debug</a>
-        <a href="/update">Update</a>
-        <a href="/historique">Historique</a>
         <table>
             <tbody>
                 <tr>
@@ -175,6 +172,8 @@ const char index_html[] PROGMEM = R"rawliteral(
                 </tr>
             </tbody>
         </table>
+        <input type="button" class="btn" value="Historique" onclick="location.href='/historique';" />
+
     </div>
 </body>
 <br>

@@ -3,8 +3,8 @@
 //######## PROGRAM ########
 void portail_process(){
 
-  cycle_en_cours = state_pin_cycle; //Status du cycle definie par etat de la broche (amelioration ?)
-  secteur = state_pin_secteur; //
+  //cycle_en_cours = state_pin_cycle; //Status du cycle definie par etat de la broche (amelioration ?)
+  //secteur = state_pin_secteur; //
 
   if(rtc_now.day() != previous_day){  //Si nouvelle journée reset des compteurs journaliers
     previous_day = rtc_now.day();
@@ -35,10 +35,10 @@ void portail_process(){
   }
   else if(secteur == false && secteurOneTime == false){   //TANT QUE LE SECTEUR N'EST PAS REVENU
     //Gestion de la batterie
-    if( (nBat < DEFAULT_SEUIL_BATTERIE) || (cmp_avant_force >= seuil_avant_force) ){  //Si N batterie en dessous du seuil OU seuil atteint -> Force ouverture
+    if( (vBat < DEFAULT_SEUIL_BATTERIE) || (cmp_avant_force >= seuil_avant_force) ){  //Si N batterie en dessous du seuil OU seuil atteint -> Force ouverture
       ouvre_force = true;
     }
-    else if(nBat > DEFAULT_SEUIL_BATTERIE + DEFAULT_SEUIL_OFFSET){  //Si N batterie au dessus du (seuil + Offset), Desactiver force ouverture
+    else if(vBat > DEFAULT_SEUIL_BATTERIE + DEFAULT_SEUIL_OFFSET){  //Si N batterie au dessus du (seuil + Offset), Desactiver force ouverture
       ouvre_force = false;
     }
   }
@@ -51,7 +51,7 @@ void portail_process(){
     date_derniere_presence[date_derniere_presence_increment++] = getRTCDateStr() + " - " + getRTCTimeStr();
 
     cmp_avant_force = 0;    // Reset si retour du secteur
-    blink(PIN_Cycle, 200);  // Cycle pour relancer le portail
+    blink(PIN_Ouvre, 200);  // Cycle pour relancer le portail
     ouvre_force = false;    //Desactiver l'ouverture forcée car retour secteur = fonctionnement normal
 
     PRINTLN("RETOUR SECTEUR");

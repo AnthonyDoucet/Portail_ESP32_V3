@@ -53,10 +53,10 @@ GLOBAL bool state_btn2 _INIT(0);
 GLOBAL bool state_btn3 _INIT(0);
 GLOBAL bool state_btn4 _INIT(0);
 
-GLOBAL bool state_pin_secteur _INIT(0);
-GLOBAL bool state_pin_cycle _INIT(0);
-GLOBAL bool state_pin_force _INIT(0);
-GLOBAL bool state_pin_ouvre _INIT(0);
+//GLOBAL bool state_pin_secteur _INIT(0);
+//GLOBAL bool state_pin_cycle _INIT(0);
+//GLOBAL bool state_pin_force _INIT(0);
+//GLOBAL bool state_pin_ouvre _INIT(0);
 
 GLOBAL uint32_t last_time_btn_pressed _INIT(0);
 

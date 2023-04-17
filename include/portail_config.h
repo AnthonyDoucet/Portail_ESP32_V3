@@ -7,12 +7,12 @@
 #define PIN_Bouton2 39          //VN  pull-up
 #define PIN_Bouton3 34          //D34 pull-up
 #define PIN_Bouton4 35          //D35 pull-up
-#define PIN_PresenceSecteur 32  //D32
-#define PIN_Cycle 33            //D33
+#define PIN_PresenceSecteur 33  //D33 pull-up
+#define PIN_Cycle 25            //D32 pull-up
 
 //Output
-#define PIN_Force 25
-#define PIN_Ouvre 26
+#define PIN_Force 26
+#define PIN_Ouvre 27
 #define PIN_LED_BUILDIN 5
 #define PIN_DEBUG 27
 
@@ -23,7 +23,7 @@
 #define LCD_HEIGHT 2                //Nombre de pixels en hauteur
 #define LCD_REFRESH_RATE 500        //Delais entre chaque mise a jour de l'ecran
 #define LCD_BACKLIGHT_TIMEOUT 60    //Delais de mise en veille de l'ecran LCD (en secondes) si aucune interaction
-#define LCD_MENU_TAILLE 8           //Nombre de Menu
+#define LCD_MENU_TAILLE 4           //Nombre de Menu
 #define LCD_START_DELAY 3000        //Temps d'affichage des infos sur LCD au demarage (en ms)
 
 //######## NETWORK ########
@@ -63,17 +63,7 @@
 #define HEURE_JOUR_FIN 21           //Heure fin de journée
 
 #define DEFAULT_SEUIL_AVANT_FORCE 10 //Nombre d'ouvertures sur batterie avant ouverture forcée 
-#define DEFAULT_SEUIL_BATTERIE 3000  //Valeur en N,  N = V * (Vmax/1023)
-#define DEFAULT_SEUIL_OFFSET 750     //Pour eviter les clignotements
-
-/*#######################
-    Bat / Pin     /  N
-    28    3.08    = 1009
-    26    2.94    = 960
-    25    2.86    = 934    
-    24    2.77    = 907
-    23    2.68    = 880
-    22    2.59    = 846
-  #######################*/
+#define DEFAULT_SEUIL_BATTERIE 24.8  //Valeur en Volt
+#define DEFAULT_SEUIL_OFFSET 0.5     //Pour eviter les clignotements
 
 #endif
