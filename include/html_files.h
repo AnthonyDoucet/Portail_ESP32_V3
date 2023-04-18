@@ -59,39 +59,47 @@ const char index_html[] PROGMEM = R"rawliteral(
                     <td><a class="miniBox %FORCE%"></a></td>
                 </tr>
                 <tr>
-                    <td>Presence du secteur:</td>
-                    <td>%PRESENCE_SECTEUR%</td>
+                    <td>Présence du secteur:</td>
+                    <td><a class="miniBox %PRESENCE_SECTEUR%"></a></td>
                 </tr>
                 <tr>
                     <td>Tension Batterie:</td>
                     <td>%VBAT%</td>
                 </tr>
                 <tr>
-                    <td>Derniere coupure secteur:</td>
-                    <td>%DATE_COUPURE%</td>
+                    <td>Dernière coupure secteur:</td><td></td>
                 </tr>
                 <tr>
-                    <td>Derniere presence secteur:</td>
-                    <td>%DATE_PRESENCE%</td>
+                    <td>%DATE_COUPURE%</td><td></td>
                 </tr>
                 <tr>
-                    <td>Dernier cycle Jour:</td>
-                    <td>%DATE_CYCLE_JOUR%</td>
+                    <td>Dernière presence secteur:</td><td></td>
                 </tr>
                 <tr>
-                    <td>Dernier cycle Nuit:</td>
-                    <td>%DATE_CYCLE_NUIT%</td>
+                    <td>%DATE_PRESENCE%</td><td></td>
+                </tr>
+                <tr>
+                    <td>Dernier cycle Jour:</td><td></td>
+                </tr>
+                <tr>
+                    <td>%DATE_CYCLE_JOUR%</td><td></td>
+                </tr>
+                <tr>
+                    <td>Dernier cycle Nuit:</td><td></td>
+                </tr>
+                <tr>
+                    <td>%DATE_CYCLE_NUIT%</td><td></td>
                 </tr>
             </tbody>
         </table>
     </div>
     <br>
     <div>
-        <h2>Controles</h2>
+        <h2>Contrôles</h2>
             <form>
                 <label>Heure d'hiver: </label>
                 <input class="btn" id="heure_hiver" type="checkbox" onChange='sendGetRequest("heure_hiver")' %HEURE_HIVER%><br>
-                <label>Synchroniser l'heure interne avec internet: </label>
+                <label>Synchroniser l'heure: </label>
                 <input class="btn" type="button" value="Sync" onclick='sendGetRequest("sync_rtc")'><br>
                 <label class="cInfo"><b>Ouverture forcée :</b></label>
                 <input class="btn" type="button" value="On/Off" onclick='sendGetRequest("force")'><br>
@@ -101,7 +109,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         <h2>Plage Horaire Jour</h2>
             <form>
                 <label>Debut: </label>
-                <input id="horaireMatin" type="time" value="%PLAGE_MATIN%" onChange='sendGetRequest("horaireMatin")'>
+                <input id="horaireMatin" type="time" value="%PLAGE_MATIN%" onChange='sendGetRequest("horaireMatin")'><br>
                 <label>Fin: </label>
                 <input id="horaireNuit" type="time" value="%PLAGE_NUIT%" onChange='sendGetRequest("horaireNuit")'><br>
             </form>
@@ -109,7 +117,10 @@ const char index_html[] PROGMEM = R"rawliteral(
         <table>
             <tbody>
                 <tr>
-                    <td>Derniere ouverture forcée: <span>%DATE_FORCE%</span></td>
+                    <td>Dernière ouverture forcée: </td>
+                </tr>
+                <tr>
+                    <td><span>%DATE_FORCE%</span></td>
                 </tr>
                 <tr>
                     <td>Compteur avant ouverture forcée: <span>%CMP_AVANT_FORCE%</span>/<span>%SEUIL_AVANT_FORCE%</span></td>

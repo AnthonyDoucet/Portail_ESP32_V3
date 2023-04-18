@@ -167,11 +167,11 @@ void lcdMenu(){
             break;
         case 3:
             lcdPrint(0,"Uptime:       ");
-            lcdPrint(1,String(millis()/1000));
+            lcdPrint(1,String(millis()/1000) + "             ");
             break;
         case 4:
             lcdPrint(0,"Ethernet:     ");
-            lcdPrint(1, ethernet_status);
+            lcdPrint(1, ethernet_status  + "             ");
             break;
 
         default:
@@ -258,6 +258,7 @@ void readEEPROM(){
   saved_uptime = eeprom.getUInt("saved_uptime");
 
   heure_hiver    = eeprom.getBool("heure_hiver");
+  horaireMatin_h = eeprom.getUChar("Matin_h");
   horaireMatin_m = eeprom.getUChar("Matin_m");
   horaireNuit_h  = eeprom.getUChar("Nuit_h");
   horaireNuit_m  = eeprom.getUChar("Nuit_m");
@@ -294,40 +295,40 @@ void readEEPROM(){
   eeprom.end();
 }
 
-void writeEEPROM_BRUTE(){
-  DEBUGLN("Write EEPROM BRUTEFORCE");
+void writeEEPROM_RESET(){
+  DEBUGLN("Write EEPROM RESET");
   eeprom.begin("data", false); //Read/Write
 
   eeprom.putULong("saved_uptime",millis()/1000);
-  eeprom.putBool("heure_hiver",heure_hiver);
-  eeprom.putUChar("Matin_h",horaireMatin_h);
-  eeprom.putUChar("Matin_m",horaireMatin_m);
-  eeprom.putUChar("Nuit_h",horaireNuit_h);
-  eeprom.putUChar("Nuit_m",horaireNuit_m);
+  eeprom.putBool("heure_hiver",false);
+  eeprom.putUChar("Matin_h",HEURE_JOUR_DEBUT);
+  eeprom.putUChar("Matin_m",0);
+  eeprom.putUChar("Nuit_h",HEURE_JOUR_FIN);
+  eeprom.putUChar("Nuit_m",0);
 
-  eeprom.putUShort("force",seuil_avant_force);
-  eeprom.putUShort("cmp_o_j",cmp_ouvertures_jour);
-  eeprom.putUShort("cmp_o_n",cmp_ouvertures_nuit);
-  eeprom.putUShort("cmp_j_j",cmp_journalier_jour);
-  eeprom.putUShort("cmp_j_n",cmp_journalier_nuit);
-  eeprom.putUShort("cmp_o_a_j",cmp_aux_ouvertures_jour);
-  eeprom.putUShort("cmp_o_a_n",cmp_aux_ouvertures_nuit);
-  eeprom.putUShort("cmp_coupures",cmp_coupures);
+  eeprom.putUShort("force", DEFAULT_SEUIL_AVANT_FORCE);
+  eeprom.putUShort("cmp_o_j",0);
+  eeprom.putUShort("cmp_o_n",0);
+  eeprom.putUShort("cmp_j_j",0);
+  eeprom.putUShort("cmp_j_n",0);
+  eeprom.putUShort("cmp_o_a_j",0);
+  eeprom.putUShort("cmp_o_a_n",0);
+  eeprom.putUShort("cmp_coupures",0);
 
   for(int i=0 ; i < 20 ; i++){
-    eeprom.putString("d_cycle_"+static_cast<char>(i), date_cycle[i]);
+    eeprom.putString("d_cycle_"+static_cast<char>(i), "Aucune");
   }
 
   for(int i=0 ; i < 10 ; i++){
-    eeprom.putString("d_coupure_"+static_cast<char>(i), date_derniere_coupure[i]);
+    eeprom.putString("d_coupure_"+static_cast<char>(i), "Aucune");
   }
 
   for(int i=0 ; i < 10 ; i++){
-    eeprom.putString("d_presence_"+static_cast<char>(i), date_derniere_presence[i]);
+    eeprom.putString("d_presence_"+static_cast<char>(i), "Aucune");
   }
 
   for(int i=0 ; i < 10 ; i++){
-    eeprom.putString("d_force_"+static_cast<char>(i), date_dernier_force[i]);
+    eeprom.putString("d_force_"+static_cast<char>(i), "Aucune");
   }
 
   eeprom.end();

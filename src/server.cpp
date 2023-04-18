@@ -14,6 +14,7 @@ void initConnection(){
     ETH.begin( SPI_MISO_GPIO, SPI_MOSI_GPIO, SPI_SCLK_GPIO, SPI_CS0_GPIO, SPI_INT0_GPIO, SPI_CLOCK_MHZ, ETH_SPI_HOST);
     //ETH.config(myIP, myGW, mySN, myDNS);
 
+    initServer(); //Start the webserver
 }
 
 void initServer(){
@@ -46,25 +47,25 @@ void initServer(){
       String str = "";
       int i;
 
-      str += "-- date_ouvertures --:\n";
+      str += "-- Ouvertures --:\n";
       for(i=0 ; i < 20 ; i++){
         str += "["+String(i)+"] " +  date_cycle[i] + "\n";
       }
       str += "\n\n";
       
-      str += "-- date_derniere_coupure --:\n";
+      str += "-- Coupures secteur --:\n";
       for(i=0 ; i < 10 ; i++){
         str += "["+String(i)+"] " +  date_derniere_coupure[i] + "\n";
       }
       str += "\n\n";
 
-      str += "-- date_derniere_presence --:\n";
+      str += "-- Presence secteur (mise sous tension) --:\n";
       for(i=0 ; i < 10 ; i++){
         str += "["+String(i)+"] " +  date_derniere_presence[i] + "\n";
       }
       str += "\n\n";
 
-      str += "-- date_dernier_force --:\n";
+      str += "-- Ouvertures Forcee --:\n";
       for(i=0 ; i < 10 ; i++){
         str += "["+String(i)+"] " +  date_dernier_force[i] + "\n";
       }
@@ -84,8 +85,10 @@ void initServer(){
       str += "portail.local/historique";
       str += "portail.local/update\n";
       str += "portail.local/reset_reboot_counter\n";
-      str += "portail.local/reboot\n\n";
-
+      str += "portail.local/reboot\n";
+      str += "portail.local/write_eeprom\n";
+      str += "portail.local/reset_eeprom\n\n";
+      
       str += "-- SET_VARIABLES --:\n";
       str += "portail.local?heure_hiver=true\n";
       str += "portail.local?sync_rtc=1681463715\n";
@@ -140,6 +143,24 @@ void initServer(){
       #endif
       request->send(200, "text/plain", "ESP rebooting...");
       shouldReboot = true;
+    });
+
+    server.on("/write_eeprom", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
+      #endif
+      writeEEPROM();
+      request->send(200, "text/plain", "EEPROM wrote");
+    });
+
+    server.on("/reset_eeprom", HTTP_GET, [](AsyncWebServerRequest *request){
+      #if WEB_ENABLE_LOGIN
+      if(!request->authenticate(WEB_ADMIN_USERNAME,WEB_ADMIN_PASSWORD))
+        return request->requestAuthentication();
+      #endif
+      writeEEPROM_RESET();
+      request->send(200, "text/plain", "EEPROM Reset");
     });
 
     // Simple Firmware Update Form
@@ -340,22 +361,22 @@ String processor(const String &var){
       return (ouvre_force) ? "cBleu" : "cGris";
     }
     else if(var == "PRESENCE_SECTEUR"){
-      return (secteur) ? "Oui" : "Non";
+      return (secteur) ? "cVert" : "cRouge";
     }
     else if(var == "VBAT"){
-      return String(vBat) + "v";
+      return String(vBat) + " v";
     }
     else if(var == "DATE_COUPURE"){
-      return date_derniere_coupure[date_derniere_coupure_increment - 1];
+      return "  " + date_derniere_coupure[date_derniere_coupure_increment - 1];
     }
     else if(var == "DATE_PRESENCE"){
-      return date_derniere_presence[date_derniere_presence_increment - 1];
+      return "  " + date_derniere_presence[date_derniere_presence_increment - 1];
     }
     else if(var == "DATE_CYCLE_JOUR"){
-      return date_dernier_cycle_jour;
+      return "  " + date_dernier_cycle_jour;
     }
     else if(var == "DATE_CYCLE_NUIT"){
-      return date_dernier_cycle_nuit;
+      return "  " + date_dernier_cycle_nuit;
     }
 
     //CONTROLES
@@ -373,7 +394,7 @@ String processor(const String &var){
 
     //OUVERTURE FORCEE
     else if(var == "DATE_FORCE"){
-      return date_dernier_force[date_dernier_force_increment - 1];
+      return "  " + date_dernier_force[date_dernier_force_increment - 1];
     }
     else if(var == "CMP_AVANT_FORCE"){
       return String(cmp_avant_force);
